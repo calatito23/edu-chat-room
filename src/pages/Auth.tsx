@@ -100,14 +100,35 @@ const Auth = () => {
       if (error) throw error;
 
       // Update user role if not student (default is student)
-      if (signupRole === "teacher" && data.user) {
+      // Insert or update user role correctly
+if (data.user) {
+  // Verificar si ya existe un registro en user_roles
+  const { data: existingRole } = await supabase
+    .from("user_roles")
+    .select("user_id")
+    .eq("user_id", data.user.id)
+    .single();
+
+      if (existingRole) {
+        // Si ya existe, actualizar el rol
         const { error: roleError } = await supabase
           .from("user_roles")
           .update({ role: signupRole })
           .eq("user_id", data.user.id);
 
         if (roleError) throw roleError;
+      } else {
+        // Si no existe, insertar nuevo registro
+        const { error: insertError } = await supabase
+          .from("user_roles")
+          .insert({
+            user_id: data.user.id,
+            role: signupRole,
+          });
+
+        if (insertError) throw insertError;
       }
+    }
 
       toast({
         title: "¡Cuenta creada!",
