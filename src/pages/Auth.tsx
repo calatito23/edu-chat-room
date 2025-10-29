@@ -92,22 +92,13 @@ const Auth = () => {
         options: {
           data: {
             full_name: signupFullName,
+            role: signupRole,
           },
           emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
       if (error) throw error;
-
-      // Update user role if not student (default is student)
-      if (signupRole === "teacher" && data.user) {
-        const { error: roleError } = await supabase
-          .from("user_roles")
-          .update({ role: signupRole })
-          .eq("user_id", data.user.id);
-
-        if (roleError) throw roleError;
-      }
 
       toast({
         title: "¡Cuenta creada!",
