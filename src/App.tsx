@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import CreateCourse from "./pages/CreateCourse";
+import JoinCourse from "./pages/JoinCourse";
 import CourseView from "./pages/CourseView";
 import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/courses/create" element={<CreateCourse />} />
+          <Route path="/courses/join" element={<JoinCourse />} />
           <Route path="/courses/:courseId" element={<CourseView />} />
           <Route path="/chat" element={<Chat />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -214,10 +214,15 @@ const Dashboard = () => {
           <h2 className="text-2xl font-bold">
             {userRole === "teacher" ? "Mis Cursos" : "Cursos Inscritos"}
           </h2>
-          {userRole === "teacher" && (
+          {userRole === "teacher" ? (
             <Button onClick={() => navigate("/courses/create")}>
               <Plus className="h-4 w-4 mr-2" />
               Crear Curso
+            </Button>
+          ) : (
+            <Button onClick={() => navigate("/courses/join")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Unirse a Curso
             </Button>
           )}
         </div>

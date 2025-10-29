@@ -60,13 +60,20 @@ const CourseView = () => {
       // Get course data
       const { data: courseData, error: courseError } = await supabase
         .from("courses")
-        .select("*, profiles!courses_teacher_id_fkey(full_name, avatar_url)")
+        .select("*")
         .eq("id", courseId)
         .single();
 
       if (courseError) throw courseError;
 
-      setCourse(courseData);
+      // Get teacher profile
+      const { data: teacherProfile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", courseData.teacher_id)
+        .single();
+
+      setCourse({ ...courseData, profiles: teacherProfile });
 
       // Check if user is enrolled (for students)
       if (roleData?.role === "student") {
