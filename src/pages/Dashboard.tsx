@@ -88,38 +88,64 @@ const Dashboard = () => {
     try {
       if (role === "teacher") {
         // Load courses taught by teacher
-        const { data, error } = await supabase
+        const { data: coursesData, error } = await supabase
           .from("courses")
-          .select("*, profiles!courses_teacher_id_fkey(full_name)")
+          .select("*")
           .eq("teacher_id", userId)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        // Get enrollment counts
-        const coursesWithCounts = await Promise.all(
-          (data || []).map(async (course) => {
+        // Get teacher profiles and enrollment counts
+        const coursesWithDetails = await Promise.all(
+          (coursesData || []).map(async (course) => {
+            const { data: teacherProfile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", course.teacher_id)
+              .single();
+
             const { count } = await supabase
               .from("course_enrollments")
               .select("*", { count: "exact", head: true })
               .eq("course_id", course.id);
 
-            return { ...course, enrollmentCount: count || 0 };
+            return { 
+              ...course, 
+              profiles: teacherProfile,
+              enrollmentCount: count || 0 
+            };
           })
         );
 
-        setCourses(coursesWithCounts);
+        setCourses(coursesWithDetails);
       } else {
         // Load courses enrolled by student
-        const { data, error } = await supabase
+        const { data: enrollmentsData, error } = await supabase
           .from("course_enrollments")
-          .select("*, courses(*, profiles!courses_teacher_id_fkey(full_name))")
+          .select("*, courses(*)")
           .eq("student_id", userId)
           .order("enrolled_at", { ascending: false });
 
         if (error) throw error;
 
-        setCourses((data || []).map(enrollment => enrollment.courses));
+        // Get teacher profiles for each course
+        const coursesWithProfiles = await Promise.all(
+          (enrollmentsData || []).map(async (enrollment: any) => {
+            const { data: teacherProfile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", enrollment.courses.teacher_id)
+              .single();
+
+            return {
+              ...enrollment.courses,
+              profiles: teacherProfile
+            };
+          })
+        );
+
+        setCourses(coursesWithProfiles);
       }
     } catch (error: any) {
       console.error("Error loading courses:", error);
