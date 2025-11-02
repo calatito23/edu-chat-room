@@ -34,42 +34,7 @@ const Dashboard = () => {
   useEffect(() => {
     checkUser();
     setupAuthListener();
-    
-    // Subscribe to realtime updates for courses and enrollments
-    const channel = supabase
-      .channel('user-courses')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'courses'
-        },
-        () => {
-          if (user && userRole) {
-            loadCourses(user.id, userRole);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'course_enrollments'
-        },
-        () => {
-          if (user && userRole) {
-            loadCourses(user.id, userRole);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, userRole]);
+  }, []);
 
   const setupAuthListener = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

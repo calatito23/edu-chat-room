@@ -37,38 +37,6 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
 
   useEffect(() => {
     loadPosts();
-    
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel('course-posts')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'posts',
-          filter: `course_id=eq.${courseId}`
-        },
-        () => {
-          loadPosts();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'comments'
-        },
-        () => {
-          loadPosts();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [courseId]);
 
   const loadPosts = async () => {
