@@ -83,9 +83,10 @@ const Dashboard = () => {
 
   const checkUser = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!session) {
+      if (sessionError || !session) {
+        await supabase.auth.signOut();
         navigate("/auth");
         return;
       }
@@ -93,27 +94,54 @@ const Dashboard = () => {
       setUser(session.user);
 
       // Get user profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", session.user.id)
         .single();
 
+      if (profileError) {
+        toast({
+          title: "Error",
+          description: "No se pudo cargar el perfil del usuario",
+          variant: "destructive",
+        });
+        await supabase.auth.signOut();
+        navigate("/auth");
+        return;
+      }
+
       setProfile(profileData);
 
       // Get user role
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", session.user.id)
         .single();
 
-      if (roleData) {
-        setUserRole(roleData.role);
-        await loadCourses(session.user.id, roleData.role);
+      if (roleError || !roleData) {
+        toast({
+          title: "Error",
+          description: "No se pudo determinar el rol del usuario",
+          variant: "destructive",
+        });
+        await supabase.auth.signOut();
+        navigate("/auth");
+        return;
       }
+
+      setUserRole(roleData.role);
+      await loadCourses(session.user.id, roleData.role);
     } catch (error: any) {
       console.error("Error loading user data:", error);
+      toast({
+        title: "Error al cargar datos",
+        description: "Por favor, inicia sesión nuevamente",
+        variant: "destructive",
+      });
+      await supabase.auth.signOut();
+      navigate("/auth");
     } finally {
       setLoading(false);
     }

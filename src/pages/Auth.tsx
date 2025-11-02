@@ -44,9 +44,32 @@ const Auth = () => {
   // Check if user is already logged in
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          // Clear invalid session
+          await supabase.auth.signOut();
+          return;
+        }
+        if (session) {
+          // Verify session is valid by checking user_roles
+          const { data: roleData, error: roleError } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .single();
+          
+          if (roleError) {
+            // Session exists but no role - clear session
+            await supabase.auth.signOut();
+            return;
+          }
+          
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+        await supabase.auth.signOut();
       }
     };
     checkUser();
