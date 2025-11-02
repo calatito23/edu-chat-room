@@ -65,10 +65,59 @@ const Chat = () => {
 
   const loadUsers = async (currentUserId: string) => {
     try {
+      // Get all courses the user is enrolled in (as student or teacher)
+      const { data: enrolledCourses } = await supabase
+        .from("course_enrollments")
+        .select("course_id")
+        .eq("student_id", currentUserId);
+
+      const { data: taughtCourses } = await supabase
+        .from("courses")
+        .select("id")
+        .eq("teacher_id", currentUserId);
+
+      const courseIds = [
+        ...(enrolledCourses?.map(e => e.course_id) || []),
+        ...(taughtCourses?.map(c => c.id) || [])
+      ];
+
+      if (courseIds.length === 0) {
+        setUsers([]);
+        return;
+      }
+
+      // Get all students enrolled in those courses
+      const { data: coursemates } = await supabase
+        .from("course_enrollments")
+        .select("student_id")
+        .in("course_id", courseIds)
+        .neq("student_id", currentUserId);
+
+      // Get all teachers of those courses
+      const { data: teachers } = await supabase
+        .from("courses")
+        .select("teacher_id")
+        .in("id", courseIds)
+        .neq("teacher_id", currentUserId);
+
+      const userIds = [
+        ...(coursemates?.map(c => c.student_id) || []),
+        ...(teachers?.map(t => t.teacher_id) || [])
+      ];
+
+      // Remove duplicates
+      const uniqueUserIds = [...new Set(userIds)];
+
+      if (uniqueUserIds.length === 0) {
+        setUsers([]);
+        return;
+      }
+
+      // Get profiles for all these users
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .neq("id", currentUserId);
+        .in("id", uniqueUserIds);
 
       if (error) throw error;
       setUsers(data || []);

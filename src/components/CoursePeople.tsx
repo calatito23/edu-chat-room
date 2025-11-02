@@ -26,6 +26,27 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
 
   useEffect(() => {
     loadPeople();
+    
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('course-enrollments')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'course_enrollments',
+          filter: `course_id=eq.${courseId}`
+        },
+        () => {
+          loadPeople();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [courseId]);
 
   const loadPeople = async () => {

@@ -38,6 +38,27 @@ const CourseFiles = ({ courseId }: CourseFilesProps) => {
   useEffect(() => {
     getCurrentUser();
     loadFiles();
+    
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('course-files')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'files',
+          filter: `course_id=eq.${courseId}`
+        },
+        () => {
+          loadFiles();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [courseId]);
 
   const getCurrentUser = async () => {
