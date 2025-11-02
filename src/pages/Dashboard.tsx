@@ -129,10 +129,7 @@ const Dashboard = () => {
           .eq("teacher_id", userId)
           .order("created_at", { ascending: false });
 
-        if (error) {
-          console.error("Error loading teacher courses:", error);
-          throw error;
-        }
+        if (error) throw error;
 
         // Get teacher profiles and enrollment counts
         const coursesWithDetails = await Promise.all(
@@ -158,45 +155,26 @@ const Dashboard = () => {
 
         setCourses(coursesWithDetails);
       } else {
-        // Load courses enrolled by student - simplified query
-        const { data: enrollmentsData, error: enrollError } = await supabase
+        // Load courses enrolled by student
+        const { data: enrollmentsData, error } = await supabase
           .from("course_enrollments")
-          .select("course_id")
-          .eq("student_id", userId);
+          .select("*, courses(*)")
+          .eq("student_id", userId)
+          .order("enrolled_at", { ascending: false });
 
-        if (enrollError) {
-          console.error("Error loading enrollments:", enrollError);
-          throw enrollError;
-        }
-
-        if (!enrollmentsData || enrollmentsData.length === 0) {
-          setCourses([]);
-          return;
-        }
-
-        // Get course details for each enrollment
-        const courseIds = enrollmentsData.map(e => e.course_id);
-        const { data: coursesData, error: coursesError } = await supabase
-          .from("courses")
-          .select("*")
-          .in("id", courseIds);
-
-        if (coursesError) {
-          console.error("Error loading courses:", coursesError);
-          throw coursesError;
-        }
+        if (error) throw error;
 
         // Get teacher profiles for each course
         const coursesWithProfiles = await Promise.all(
-          (coursesData || []).map(async (course: any) => {
+          (enrollmentsData || []).map(async (enrollment: any) => {
             const { data: teacherProfile } = await supabase
               .from("profiles")
               .select("full_name")
-              .eq("id", course.teacher_id)
+              .eq("id", enrollment.courses.teacher_id)
               .single();
 
             return {
-              ...course,
+              ...enrollment.courses,
               profiles: teacherProfile
             };
           })
@@ -205,7 +183,7 @@ const Dashboard = () => {
         setCourses(coursesWithProfiles);
       }
     } catch (error: any) {
-      console.error("Error in loadCourses:", error);
+      console.error("Error loading courses:", error);
       toast({
         title: "Error",
         description: "No se pudieron cargar los cursos",
