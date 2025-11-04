@@ -42,10 +42,20 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
       // Load students
       const { data: enrollmentsData } = await supabase
         .from("course_enrollments")
-        .select("*, profiles:student_id(*)")
+        .select("student_id")
         .eq("course_id", courseId);
 
-      setStudents(enrollmentsData?.map((e) => e.profiles) || []);
+      if (enrollmentsData && enrollmentsData.length > 0) {
+        const studentIds = enrollmentsData.map(e => e.student_id);
+        const { data: studentsData } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("id", studentIds);
+        
+        setStudents(studentsData || []);
+      } else {
+        setStudents([]);
+      }
     } catch (error) {
       console.error("Error loading people:", error);
     }
