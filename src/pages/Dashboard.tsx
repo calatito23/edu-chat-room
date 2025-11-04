@@ -107,7 +107,7 @@ const Dashboard = () => {
 
             const { count } = await supabase
               .from("course_enrollments")
-              .select("*", { count: "exact", head: true })
+              .select("id", { count: "exact", head: true })
               .eq("course_id", course.id);
 
             return { 
