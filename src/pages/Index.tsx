@@ -36,10 +36,10 @@ const Index = () => {
             Plataforma educativa completa para la gestión de cursos, comunicación entre alumnos y profesores
           </p>
           <div className="flex gap-4 justify-center mt-8">
-            <Button size="lg" onClick={() => navigate("/auth")}>
+            <Button size="lg" onClick={() => navigate("/auth?tab=signup")}>
               Comenzar Ahora
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
+            <Button size="lg" variant="outline" onClick={() => navigate("/auth?tab=login")}>
               Iniciar Sesión
             </Button>
           </div>
@@ -84,7 +84,7 @@ const Index = () => {
           <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
             Únete a la plataforma educativa que facilita el aprendizaje y la enseñanza
           </p>
-          <Button size="lg" onClick={() => navigate("/auth")}>
+          <Button size="lg" onClick={() => navigate("/auth?tab=signup")}>
             Crear Cuenta Gratis
           </Button>
         </div>
