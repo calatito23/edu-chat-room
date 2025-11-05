@@ -150,9 +150,9 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4 relative">
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4 relative overflow-hidden">
       {/* Logo UNMSM como marca de agua */}
-      <div className="absolute top-6 right-6 opacity-20">
+      <div className="absolute top-6 right-6 opacity-40">
         <img 
           src={unmsmLogo} 
           alt="UNMSM" 
@@ -161,19 +161,19 @@ const Auth = () => {
       </div>
 
       <Card className="w-full max-w-md shadow-[var(--shadow-elevated)] relative z-10">
-        <CardHeader className="text-center space-y-3">
+        <CardHeader className="text-center space-y-2 pb-4">
           {/* Logo FIEE destacado */}
-          <div className="flex justify-center mb-2">
+          <div className="flex justify-center mb-1">
             <img 
               src={fieeLogo} 
               alt="FIEE Logo" 
-              className="h-20 w-20 object-contain"
+              className="h-16 w-16 object-contain"
             />
           </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <CardTitle className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Aula Virtual FIEE
           </CardTitle>
-          <CardDescription className="text-sm">
+          <CardDescription className="text-xs">
             Facultad de Ingeniería Electrónica y Eléctrica
           </CardDescription>
         </CardHeader>
@@ -186,9 +186,9 @@ const Auth = () => {
               </TabsList>
 
               <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                <form onSubmit={handleLogin} className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="login-email" className="text-sm">Email</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -196,10 +196,11 @@ const Auth = () => {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       required
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Contraseña</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="login-password" className="text-sm">Contraseña</Label>
                     <Input
                       id="login-password"
                       type="password"
@@ -207,17 +208,18 @@ const Auth = () => {
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
                       required
+                      className="h-9"
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full h-9" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Iniciar Sesión
                   </Button>
-                  <div className="text-center mt-2">
+                  <div className="text-center">
                     <button
                       type="button"
                       onClick={() => setShowResetPassword(true)}
-                      className="text-sm text-primary hover:underline"
+                      className="text-xs text-primary hover:underline"
                     >
                       ¿Olvidaste tu contraseña?
                     </button>
@@ -226,9 +228,9 @@ const Auth = () => {
               </TabsContent>
 
               <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nombre Completo</Label>
+                <form onSubmit={handleSignup} className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signup-name" className="text-sm">Nombre Completo</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -236,10 +238,11 @@ const Auth = () => {
                       value={signupFullName}
                       onChange={(e) => setSignupFullName(e.target.value)}
                       required
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signup-email" className="text-sm">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -247,10 +250,11 @@ const Auth = () => {
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
                       required
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Contraseña</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signup-password" className="text-sm">Contraseña</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -259,12 +263,13 @@ const Auth = () => {
                       onChange={(e) => setSignupPassword(e.target.value)}
                       required
                       minLength={6}
+                      className="h-9"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-role">Tipo de Usuario</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signup-role" className="text-sm">Tipo de Usuario</Label>
                     <Select value={signupRole} onValueChange={(value: "student" | "teacher") => setSignupRole(value)}>
-                      <SelectTrigger id="signup-role">
+                      <SelectTrigger id="signup-role" className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -273,7 +278,7 @@ const Auth = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full h-9" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Crear Cuenta
                   </Button>
@@ -281,20 +286,20 @@ const Auth = () => {
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Recuperar Contraseña</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-base font-semibold">Recuperar Contraseña</h3>
                 <button
                   type="button"
                   onClick={() => setShowResetPassword(false)}
-                  className="text-sm text-muted-foreground hover:text-foreground"
+                  className="text-xs text-muted-foreground hover:text-foreground"
                 >
                   Volver
                 </button>
               </div>
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reset-email">Email</Label>
+              <form onSubmit={handleResetPassword} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="reset-email" className="text-sm">Email</Label>
                   <Input
                     id="reset-email"
                     type="email"
@@ -302,9 +307,10 @@ const Auth = () => {
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     required
+                    className="h-9"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full h-9" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Enviar Email de Recuperación
                 </Button>
