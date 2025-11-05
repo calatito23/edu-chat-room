@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, BookOpen, MessageSquare, Upload } from "lucide-react";
+import fieeLogo from "@/assets/fiee-logo.png";
 
 /**
  * Página de inicio del Aula Virtual
@@ -25,15 +26,23 @@ const Index = () => {
         {/* Hero Section */}
         <div className="text-center mb-16 space-y-6">
           <div className="flex justify-center mb-8">
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-primary to-secondary shadow-[var(--shadow-elevated)]">
-              <GraduationCap className="h-16 w-16 text-white" />
-            </div>
+            <img 
+              src={fieeLogo} 
+              alt="FIEE Logo" 
+              className="h-32 w-32 object-contain"
+            />
           </div>
           <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            Aula Virtual
+            Aula Virtual FIEE
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Plataforma educativa completa para la gestión de cursos, comunicación entre alumnos y profesores
+          <p className="text-lg font-medium text-primary/80 max-w-2xl mx-auto">
+            Facultad de Ingeniería Electrónica y Eléctrica
+          </p>
+          <p className="text-base text-muted-foreground max-w-2xl mx-auto">
+            Universidad Nacional Mayor de San Marcos
+          </p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mt-4">
+            Plataforma educativa para la gestión de cursos, comunicación entre estudiantes y docentes
           </p>
           <div className="flex gap-4 justify-center mt-8">
             <Button size="lg" onClick={() => navigate("/auth?tab=signup")}>
