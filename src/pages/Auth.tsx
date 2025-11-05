@@ -8,7 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import fieeLogo from "@/assets/fiee-logo.png";
+import unmsmLogo from "@/assets/unmsm-logo.png";
 
 /**
  * Página de autenticación del aula virtual
@@ -28,6 +30,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "login");
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -147,114 +150,148 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
-      <Card className="w-full max-w-md shadow-[var(--shadow-elevated)]">
-        <CardHeader className="text-center space-y-2">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4 relative">
+      {/* Logo UNMSM como marca de agua */}
+      <div className="absolute top-6 right-6 opacity-20">
+        <img 
+          src={unmsmLogo} 
+          alt="UNMSM" 
+          className="h-16 w-auto object-contain"
+        />
+      </div>
+
+      <Card className="w-full max-w-md shadow-[var(--shadow-elevated)] relative z-10">
+        <CardHeader className="text-center space-y-3">
+          {/* Logo FIEE destacado */}
           <div className="flex justify-center mb-2">
-            <div className="p-3 rounded-full bg-gradient-to-br from-primary to-secondary">
-              <GraduationCap className="h-8 w-8 text-white" />
-            </div>
+            <img 
+              src={fieeLogo} 
+              alt="FIEE Logo" 
+              className="h-20 w-20 object-contain"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold">Aula Virtual</CardTitle>
-          <CardDescription>
-            Plataforma educativa para alumnos y profesores
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            Aula Virtual FIEE
+          </CardTitle>
+          <CardDescription className="text-sm">
+            Facultad de Ingeniería Electrónica y Eléctrica
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="login">Ingresar</TabsTrigger>
-              <TabsTrigger value="signup">Registro</TabsTrigger>
-              <TabsTrigger value="reset">Recuperar</TabsTrigger>
-            </TabsList>
+          {!showResetPassword ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Ingresar</TabsTrigger>
+                <TabsTrigger value="signup">Registro</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Contraseña</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Iniciar Sesión
-                </Button>
-              </form>
-            </TabsContent>
+              <TabsContent value="login">
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <Input
+                      id="login-email"
+                      type="email"
+                      placeholder="tu@email.com"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Contraseña</Label>
+                    <Input
+                      id="login-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Iniciar Sesión
+                  </Button>
+                  <div className="text-center mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowResetPassword(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
+                </form>
+              </TabsContent>
 
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nombre Completo</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="Juan Pérez"
-                    value={signupFullName}
-                    onChange={(e) => setSignupFullName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Contraseña</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-role">Tipo de Usuario</Label>
-                  <Select value={signupRole} onValueChange={(value: "student" | "teacher") => setSignupRole(value)}>
-                    <SelectTrigger id="signup-role">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="student">Alumno</SelectItem>
-                      <SelectItem value="teacher">Profesor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Crear Cuenta
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="reset">
+              <TabsContent value="signup">
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">Nombre Completo</Label>
+                    <Input
+                      id="signup-name"
+                      type="text"
+                      placeholder="Juan Pérez"
+                      value={signupFullName}
+                      onChange={(e) => setSignupFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="tu@email.com"
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Contraseña</Label>
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-role">Tipo de Usuario</Label>
+                    <Select value={signupRole} onValueChange={(value: "student" | "teacher") => setSignupRole(value)}>
+                      <SelectTrigger id="signup-role">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="student">Alumno</SelectItem>
+                        <SelectItem value="teacher">Profesor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Crear Cuenta
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Recuperar Contraseña</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowResetPassword(false)}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Volver
+                </button>
+              </div>
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="reset-email">Email</Label>
@@ -272,8 +309,8 @@ const Auth = () => {
                   Enviar Email de Recuperación
                 </Button>
               </form>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
