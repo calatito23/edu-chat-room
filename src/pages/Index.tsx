@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, BookOpen, MessageSquare, Upload } from "lucide-react";
+import { BookOpen, MessageSquare, Upload } from "lucide-react";
 import fieeLogo from "@/assets/fiee-logo.png";
+import unmsmLogo from "@/assets/unmsm-logo.png";
 
 /**
  * Página de inicio del Aula Virtual
@@ -21,30 +22,36 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10">
-      <div className="container mx-auto px-4 py-16">
+    <div className="h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center relative overflow-hidden">
+      {/* Logo UNMSM como marca de agua */}
+      <div className="absolute top-6 right-6 opacity-40">
+        <img 
+          src={unmsmLogo} 
+          alt="UNMSM" 
+          className="h-20 w-auto object-contain"
+        />
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
         {/* Hero Section */}
-        <div className="text-center mb-16 space-y-6">
-          <div className="flex justify-center mb-8">
+        <div className="text-center mb-12 space-y-4 animate-fade-in">
+          <div className="flex justify-center mb-4">
             <img 
               src={fieeLogo} 
               alt="FIEE Logo" 
-              className="h-32 w-32 object-contain"
+              className="h-24 w-24 object-contain"
             />
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Aula Virtual FIEE
           </h1>
-          <p className="text-lg font-medium text-primary/80 max-w-2xl mx-auto">
+          <p className="text-lg font-medium text-primary/80">
             Facultad de Ingeniería Electrónica y Eléctrica
           </p>
-          <p className="text-base text-muted-foreground max-w-2xl mx-auto">
-            Universidad Nacional Mayor de San Marcos
+          <p className="text-base text-muted-foreground max-w-xl mx-auto">
+            Plataforma educativa para la gestión de cursos y comunicación
           </p>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mt-4">
-            Plataforma educativa para la gestión de cursos, comunicación entre estudiantes y docentes
-          </p>
-          <div className="flex gap-4 justify-center mt-8">
+          <div className="flex gap-4 justify-center mt-6">
             <Button size="lg" onClick={() => navigate("/auth?tab=signup")}>
               Comenzar Ahora
             </Button>
@@ -55,47 +62,36 @@ const Index = () => {
         </div>
 
         {/* Features */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          <div className="text-center p-6 rounded-xl bg-card shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-elevated)] transition-all">
-            <div className="inline-flex p-4 rounded-full bg-primary/10 mb-4">
-              <BookOpen className="h-8 w-8 text-primary" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="text-center p-5 rounded-xl bg-card shadow-[var(--shadow-soft)] hover:shadow-[0_8px_24px_hsl(356_72%_52%_/_0.2)] transition-all hover-scale">
+            <div className="inline-flex p-3 rounded-full bg-primary/10 mb-3">
+              <BookOpen className="h-6 w-6 text-primary" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Gestión de Cursos</h3>
-            <p className="text-muted-foreground">
-              Crea y gestiona cursos, inscribe alumnos y organiza contenido educativo
+            <h3 className="text-lg font-bold mb-2">Gestión de Cursos</h3>
+            <p className="text-sm text-muted-foreground">
+              Crea y gestiona cursos, inscribe alumnos y organiza contenido
             </p>
           </div>
 
-          <div className="text-center p-6 rounded-xl bg-card shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-elevated)] transition-all">
-            <div className="inline-flex p-4 rounded-full bg-secondary/10 mb-4">
-              <MessageSquare className="h-8 w-8 text-secondary" />
+          <div className="text-center p-5 rounded-xl bg-card shadow-[var(--shadow-soft)] hover:shadow-[0_8px_24px_hsl(356_72%_52%_/_0.2)] transition-all hover-scale">
+            <div className="inline-flex p-3 rounded-full bg-secondary/10 mb-3">
+              <MessageSquare className="h-6 w-6 text-secondary" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Chat en Tiempo Real</h3>
-            <p className="text-muted-foreground">
-              Comunícate con alumnos y profesores mediante chat privado en tiempo real
+            <h3 className="text-lg font-bold mb-2">Chat en Tiempo Real</h3>
+            <p className="text-sm text-muted-foreground">
+              Comunícate con alumnos y profesores en tiempo real
             </p>
           </div>
 
-          <div className="text-center p-6 rounded-xl bg-card shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-elevated)] transition-all">
-            <div className="inline-flex p-4 rounded-full bg-accent/10 mb-4">
-              <Upload className="h-8 w-8 text-accent" />
+          <div className="text-center p-5 rounded-xl bg-card shadow-[var(--shadow-soft)] hover:shadow-[0_8px_24px_hsl(356_72%_52%_/_0.2)] transition-all hover-scale">
+            <div className="inline-flex p-3 rounded-full bg-accent/10 mb-3">
+              <Upload className="h-6 w-6 text-accent" />
             </div>
-            <h3 className="text-xl font-bold mb-2">Archivos Compartidos</h3>
-            <p className="text-muted-foreground">
-              Sube y descarga documentos, imágenes y recursos del curso
+            <h3 className="text-lg font-bold mb-2">Archivos Compartidos</h3>
+            <p className="text-sm text-muted-foreground">
+              Sube y descarga documentos y recursos del curso
             </p>
           </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="text-center mt-20 p-8 rounded-2xl bg-gradient-to-r from-primary/5 to-secondary/5 border">
-          <h2 className="text-3xl font-bold mb-4">¿Listo para comenzar?</h2>
-          <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-            Únete a la plataforma educativa que facilita el aprendizaje y la enseñanza
-          </p>
-          <Button size="lg" onClick={() => navigate("/auth?tab=signup")}>
-            Crear Cuenta Gratis
-          </Button>
         </div>
       </div>
     </div>
