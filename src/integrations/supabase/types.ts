@@ -264,6 +264,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_course_files: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["user_role"]
