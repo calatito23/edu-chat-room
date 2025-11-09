@@ -88,6 +88,16 @@ const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Solo profesores pueden subir archivos
+    if (userRole !== "teacher") {
+      toast({
+        title: "Permiso denegado",
+        description: "Solo los profesores pueden subir archivos",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -212,32 +222,34 @@ const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Subir Archivo</span>
-            <label htmlFor="file-upload">
-              <Button disabled={uploading} asChild>
-                <span className="cursor-pointer">
-                  {uploading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Upload className="h-4 w-4 mr-2" />
-                  )}
-                  {uploading ? "Subiendo..." : "Seleccionar Archivo"}
-                </span>
-              </Button>
-            </label>
-            <Input
-              id="file-upload"
-              type="file"
-              className="hidden"
-              onChange={handleUpload}
-              disabled={uploading}
-            />
-          </CardTitle>
-        </CardHeader>
-      </Card>
+      {userRole === "teacher" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Subir Archivo</span>
+              <label htmlFor="file-upload">
+                <Button disabled={uploading} asChild>
+                  <span className="cursor-pointer">
+                    {uploading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    {uploading ? "Subiendo..." : "Seleccionar Archivo"}
+                  </span>
+                </Button>
+              </label>
+              <Input
+                id="file-upload"
+                type="file"
+                className="hidden"
+                onChange={handleUpload}
+                disabled={uploading}
+              />
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
