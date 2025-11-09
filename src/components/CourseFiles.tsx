@@ -5,6 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Download, FileText, Trash2, Loader2 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 /**
  * Gestor de archivos del curso
@@ -34,7 +40,7 @@ interface CourseFilesProps {
 const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
   const { toast } = useToast();
   const [files, setFiles] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<number | null>(null); // Ahora guarda el número de semana
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,7 +90,7 @@ const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, weekNumber: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -98,7 +104,7 @@ const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
       return;
     }
 
-    setUploading(true);
+    setUploading(weekNumber);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -122,6 +128,7 @@ const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
           file_path: filePath,
           file_size: file.size,
           mime_type: file.type,
+          week_number: weekNumber,
         });
 
       if (dbError) throw dbError;
@@ -131,7 +138,7 @@ const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
       
       toast({
         title: "Archivo subido",
-        description: "El archivo se ha subido exitosamente",
+        description: `Archivo subido a la Semana ${weekNumber}`,
       });
 
       e.target.value = ""; // Reset input
@@ -143,7 +150,7 @@ const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
         variant: "destructive",
       });
     } finally {
-      setUploading(false);
+      setUploading(null);
     }
   };
 
@@ -220,87 +227,115 @@ const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
   };
 
+  // Agrupar archivos por semana
+  const filesByWeek: { [key: number]: any[] } = {};
+  for (let i = 1; i <= 16; i++) {
+    filesByWeek[i] = files.filter(f => f.week_number === i);
+  }
+
   return (
     <div className="space-y-6">
-      {userRole === "teacher" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Subir Archivo</span>
-              <label htmlFor="file-upload">
-                <Button disabled={uploading} asChild>
-                  <span className="cursor-pointer">
-                    {uploading ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4 mr-2" />
-                    )}
-                    {uploading ? "Subiendo..." : "Seleccionar Archivo"}
-                  </span>
-                </Button>
-              </label>
-              <Input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                onChange={handleUpload}
-                disabled={uploading}
-              />
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      )}
-
       <Card>
         <CardHeader>
-          <CardTitle>Archivos del Curso ({files.length})</CardTitle>
+          <CardTitle>Material por Semanas</CardTitle>
         </CardHeader>
         <CardContent>
-          {files.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No hay archivos en este curso</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {files.map((file) => (
-                <div
-                  key={file.id}
-                  className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent transition-colors"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <FileText className="h-8 w-8 text-primary flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">{file.file_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatFileSize(file.file_size)} •{" "}
-                        {file.profiles?.full_name} •{" "}
-                        {new Date(file.created_at).toLocaleDateString()}
-                      </p>
+          <Accordion type="multiple" className="w-full">
+            {Array.from({ length: 16 }, (_, i) => i + 1).map((weekNumber) => {
+              const weekFiles = filesByWeek[weekNumber] || [];
+              return (
+                <AccordionItem key={weekNumber} value={`week-${weekNumber}`}>
+                  <AccordionTrigger>
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <span className="font-semibold">Semana {weekNumber}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {weekFiles.length} {weekFiles.length === 1 ? "archivo" : "archivos"}
+                      </span>
                     </div>
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownload(file)}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    {userRole === "teacher" && currentUserId === teacherId && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(file)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 pt-4">
+                      {/* Botón de subir archivo (solo profesores) */}
+                      {userRole === "teacher" && (
+                        <div className="flex justify-end">
+                          <label htmlFor={`file-upload-week-${weekNumber}`}>
+                            <Button 
+                              disabled={uploading === weekNumber} 
+                              asChild
+                              size="sm"
+                            >
+                              <span className="cursor-pointer">
+                                {uploading === weekNumber ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Upload className="h-4 w-4 mr-2" />
+                                )}
+                                {uploading === weekNumber ? "Subiendo..." : "Subir Archivo"}
+                              </span>
+                            </Button>
+                          </label>
+                          <Input
+                            id={`file-upload-week-${weekNumber}`}
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => handleUpload(e, weekNumber)}
+                            disabled={uploading === weekNumber}
+                          />
+                        </div>
+                      )}
+
+                      {/* Lista de archivos */}
+                      {weekFiles.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <FileText className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                          <p className="text-sm">No hay archivos en esta semana</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {weekFiles.map((file) => (
+                            <div
+                              key={file.id}
+                              className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors"
+                            >
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <FileText className="h-6 w-6 text-primary flex-shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium truncate text-sm">{file.file_name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatFileSize(file.file_size)} •{" "}
+                                    {file.profiles?.full_name} •{" "}
+                                    {new Date(file.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 flex-shrink-0">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownload(file)}
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                                {userRole === "teacher" && currentUserId === teacherId && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDelete(file)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         </CardContent>
       </Card>
     </div>

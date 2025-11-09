@@ -118,6 +118,7 @@ export type Database = {
           id: string
           mime_type: string
           uploader_id: string
+          week_number: number
         }
         Insert: {
           course_id: string
@@ -128,6 +129,7 @@ export type Database = {
           id?: string
           mime_type: string
           uploader_id: string
+          week_number?: number
         }
         Update: {
           course_id?: string
@@ -138,6 +140,7 @@ export type Database = {
           id?: string
           mime_type?: string
           uploader_id?: string
+          week_number?: number
         }
         Relationships: [
           {
