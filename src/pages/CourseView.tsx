@@ -230,7 +230,7 @@ const CourseView = () => {
           </TabsContent>
 
           <TabsContent value="files" className="mt-6">
-            <CourseFiles courseId={courseId!} />
+            <CourseFiles courseId={courseId!} userRole={userRole!} teacherId={course?.teacher_id} />
           </TabsContent>
         </Tabs>
       </main>

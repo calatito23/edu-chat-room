@@ -27,9 +27,11 @@ import { Upload, Download, FileText, Trash2, Loader2 } from "lucide-react";
  */
 interface CourseFilesProps {
   courseId: string;
+  userRole: "student" | "teacher";
+  teacherId: string;
 }
 
-const CourseFiles = ({ courseId }: CourseFilesProps) => {
+const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
   const { toast } = useToast();
   const [files, setFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -273,7 +275,7 @@ const CourseFiles = ({ courseId }: CourseFilesProps) => {
                     >
                       <Download className="h-4 w-4" />
                     </Button>
-                    {currentUserId === file.uploader_id && (
+                    {userRole === "teacher" && currentUserId === teacherId && (
                       <Button
                         variant="outline"
                         size="sm"
