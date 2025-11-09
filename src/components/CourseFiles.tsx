@@ -47,28 +47,36 @@ const CourseFiles = ({ courseId }: CourseFilesProps) => {
 
   const loadFiles = async () => {
     try {
-      console.log("Loading files for course:", courseId);
-      
-      const { data, error } = await supabase
+      // Cargar archivos
+      const { data: filesData, error: filesError } = await supabase
         .from("files")
-        .select("*, profiles:uploader_id(full_name)")
+        .select("*")
         .eq("course_id", courseId)
         .order("created_at", { ascending: false });
 
-      console.log("Files query result:", { data, error });
-
-      if (error) {
-        console.error("Error from Supabase:", error);
+      if (filesError) {
         toast({
           title: "Error al cargar archivos",
-          description: error.message,
+          description: filesError.message,
           variant: "destructive",
         });
-        throw error;
+        throw filesError;
       }
-      
-      console.log("Files loaded successfully:", data?.length || 0);
-      setFiles(data || []);
+
+      // Cargar perfiles de los uploaders
+      const uploaderIds = [...new Set(filesData?.map(f => f.uploader_id) || [])];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", uploaderIds);
+
+      // Combinar datos
+      const filesWithProfiles = filesData?.map(file => ({
+        ...file,
+        profiles: profilesData?.find(p => p.id === file.uploader_id) || null
+      })) || [];
+
+      setFiles(filesWithProfiles);
     } catch (error) {
       console.error("Error loading files:", error);
     }
