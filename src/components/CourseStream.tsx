@@ -40,6 +40,7 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
 
   const loadPosts = async () => {
     try {
+      console.log("Loading posts for course:", courseId);
       const { data, error } = await supabase
         .from("posts")
         .select(`
@@ -53,7 +54,11 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
         .eq("course_id", courseId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading posts:", error);
+        throw error;
+      }
+      console.log("Posts loaded:", data);
       setPosts(data || []);
     } catch (error) {
       console.error("Error loading posts:", error);
