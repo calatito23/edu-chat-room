@@ -30,7 +30,6 @@ interface CourseStreamProps {
 const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
   const { toast } = useToast();
   const [posts, setPosts] = useState<any[]>([]);
-  const [newPostTitle, setNewPostTitle] = useState("");
   const [newPostContent, setNewPostContent] = useState("");
   const [commentInputs, setCommentInputs] = useState<{ [key: string]: string }>({});
   const [showNewPost, setShowNewPost] = useState(false);
@@ -63,7 +62,16 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPostTitle.trim() || !newPostContent.trim()) return;
+    if (!newPostContent.trim()) return;
+
+    if (newPostContent.trim().length > 100) {
+      toast({
+        title: "Error",
+        description: "La publicación no puede tener más de 100 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -74,7 +82,7 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
         .insert({
           course_id: courseId,
           author_id: user.id,
-          title: newPostTitle.trim(),
+          title: null,
           content: newPostContent.trim(),
         });
 
@@ -85,7 +93,6 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
         description: "La publicación se ha creado exitosamente",
       });
 
-      setNewPostTitle("");
       setNewPostContent("");
       setShowNewPost(false);
       loadPosts();
@@ -144,19 +151,19 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
           {showNewPost && (
             <CardContent>
               <form onSubmit={handleCreatePost} className="space-y-4">
-                <Input
-                  placeholder="Título de la publicación"
-                  value={newPostTitle}
-                  onChange={(e) => setNewPostTitle(e.target.value)}
-                  required
-                />
-                <Textarea
-                  placeholder="Contenido de la publicación..."
-                  value={newPostContent}
-                  onChange={(e) => setNewPostContent(e.target.value)}
-                  required
-                  rows={4}
-                />
+                <div>
+                  <Textarea
+                    placeholder="Escribe tu publicación..."
+                    value={newPostContent}
+                    onChange={(e) => setNewPostContent(e.target.value)}
+                    required
+                    rows={3}
+                    maxLength={100}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1 text-right">
+                    {newPostContent.length}/100 caracteres
+                  </p>
+                </div>
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1">
                     Publicar
@@ -166,7 +173,6 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
                     variant="outline"
                     onClick={() => {
                       setShowNewPost(false);
-                      setNewPostTitle("");
                       setNewPostContent("");
                     }}
                   >
@@ -197,16 +203,15 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <CardTitle className="text-lg">{post.title}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {post.profiles?.full_name} •{" "}
+                  <p className="text-sm font-medium">{post.profiles?.full_name}</p>
+                  <p className="text-xs text-muted-foreground">
                     {new Date(post.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm whitespace-pre-wrap">{post.content}</p>
+              <p className="whitespace-pre-wrap">{post.content}</p>
 
               {/* Comments */}
               <div className="border-t pt-4 space-y-4">

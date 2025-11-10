@@ -186,7 +186,7 @@ export type Database = {
           course_id: string
           created_at: string
           id: string
-          title: string
+          title: string | null
           updated_at: string
         }
         Insert: {
@@ -195,7 +195,7 @@ export type Database = {
           course_id: string
           created_at?: string
           id?: string
-          title: string
+          title?: string | null
           updated_at?: string
         }
         Update: {
@@ -204,7 +204,7 @@ export type Database = {
           course_id?: string
           created_at?: string
           id?: string
-          title?: string
+          title?: string | null
           updated_at?: string
         }
         Relationships: [
