@@ -41,27 +41,63 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
   const loadPosts = async () => {
     try {
       console.log("Loading posts for course:", courseId);
-      const { data, error } = await supabase
+      
+      // Query simplificada sin nested relations
+      const { data: postsData, error: postsError } = await supabase
         .from("posts")
-        .select(`
-          *,
-          profiles:author_id(full_name, avatar_url),
-          comments(
-            *,
-            profiles:author_id(full_name, avatar_url)
-          )
-        `)
+        .select("*")
         .eq("course_id", courseId)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error loading posts:", error);
-        throw error;
+      if (postsError) {
+        console.error("Error loading posts:", postsError);
+        toast({
+          title: "Error al cargar publicaciones",
+          description: postsError.message,
+          variant: "destructive",
+        });
+        return;
       }
-      console.log("Posts loaded:", data);
-      setPosts(data || []);
+
+      console.log("Posts data:", postsData);
+
+      // Cargar perfiles y comentarios por separado
+      if (postsData && postsData.length > 0) {
+        const authorIds = [...new Set(postsData.map(p => p.author_id))];
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("id", authorIds);
+
+        const postIds = postsData.map(p => p.id);
+        const { data: commentsData } = await supabase
+          .from("comments")
+          .select("*")
+          .in("post_id", postIds)
+          .order("created_at", { ascending: true });
+
+        // Mapear los datos
+        const postsWithData = postsData.map(post => ({
+          ...post,
+          profiles: profilesData?.find(p => p.id === post.author_id),
+          comments: commentsData?.filter(c => c.post_id === post.id).map(comment => ({
+            ...comment,
+            profiles: profilesData?.find(p => p.id === comment.author_id)
+          })) || []
+        }));
+
+        console.log("Posts with data:", postsWithData);
+        setPosts(postsWithData);
+      } else {
+        setPosts([]);
+      }
     } catch (error) {
       console.error("Error loading posts:", error);
+      toast({
+        title: "Error",
+        description: "Error al cargar las publicaciones",
+        variant: "destructive",
+      });
     }
   };
 
@@ -196,6 +232,9 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
             <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-center">
               Aún no hay publicaciones en este curso
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Course ID: {courseId}
             </p>
           </CardContent>
         </Card>
