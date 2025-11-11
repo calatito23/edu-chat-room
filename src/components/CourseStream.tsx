@@ -63,18 +63,27 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
 
       // Cargar perfiles y comentarios por separado
       if (postsData && postsData.length > 0) {
-        const authorIds = [...new Set(postsData.map(p => p.author_id))];
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("*")
-          .in("id", authorIds);
-
+        // Primero cargar los comentarios
         const postIds = postsData.map(p => p.id);
         const { data: commentsData } = await supabase
           .from("comments")
           .select("*")
           .in("post_id", postIds)
           .order("created_at", { ascending: true });
+
+        // Combinar todos los author_ids (de posts y comentarios)
+        const allAuthorIds = [
+          ...new Set([
+            ...postsData.map(p => p.author_id),
+            ...(commentsData?.map(c => c.author_id) || [])
+          ])
+        ];
+
+        // Cargar todos los perfiles necesarios
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("id", allAuthorIds);
 
         // Mapear los datos
         const postsWithData = postsData.map(post => ({
