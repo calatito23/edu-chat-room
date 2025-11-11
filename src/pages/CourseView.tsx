@@ -209,7 +209,7 @@ const CourseView = () => {
           <TabsList className="grid w-full grid-cols-3 max-w-md">
             <TabsTrigger value="stream">
               <FileText className="h-4 w-4 mr-2" />
-              Stream
+              Publicaciones
             </TabsTrigger>
             <TabsTrigger value="people">
               <Users className="h-4 w-4 mr-2" />

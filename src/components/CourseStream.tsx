@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { MessageSquare, Send, User } from "lucide-react";
+import { MessageSquare, Send, User, Trash2 } from "lucide-react";
 
 /**
  * Componente de publicaciones del curso (Stream)
@@ -175,6 +175,54 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Publicación eliminada",
+        description: "La publicación se ha eliminado exitosamente",
+      });
+
+      loadPosts();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la publicación",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Comentario eliminado",
+        description: "El comentario se ha eliminado exitosamente",
+      });
+
+      loadPosts();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el comentario",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {userRole === "teacher" && (
@@ -252,6 +300,15 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
                     {new Date(post.created_at).toLocaleDateString()}
                   </p>
                 </div>
+                {userRole === "teacher" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeletePost(post.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -269,13 +326,27 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
                       <User className="h-4 w-4 text-secondary" />
                     </div>
                     <div className="flex-1 bg-muted rounded-lg p-3">
-                      <p className="text-sm font-medium">
-                        {comment.profiles?.full_name}
-                      </p>
-                      <p className="text-sm mt-1">{comment.content}</p>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(comment.created_at).toLocaleDateString()}
-                      </span>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">
+                            {comment.profiles?.full_name || "Usuario"}
+                          </p>
+                          <p className="text-sm mt-1">{comment.content}</p>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(comment.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {userRole === "teacher" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleDeleteComment(comment.id)}
+                          >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
