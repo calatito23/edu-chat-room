@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Clock, CheckCircle, XCircle, Edit, BarChart3 } from "lucide-react";
+import { Plus, Trash2, Clock, CheckCircle, XCircle, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -69,6 +69,19 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     if (userRole === "student") {
       loadUserSubmissions();
     }
+
+    // Escuchar cuando la página se vuelve visible para recargar submissions
+    const handleVisibilityChange = () => {
+      if (!document.hidden && userRole === "student") {
+        loadUserSubmissions();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [courseId, userRole]);
 
   const loadUserSubmissions = async () => {
@@ -671,7 +684,15 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
             const StatusIcon = status.icon;
             
             return (
-              <Card key={evaluation.id} className="hover:shadow-md transition-shadow">
+              <Card 
+                key={evaluation.id} 
+                className={`hover:shadow-md transition-shadow ${userRole === "teacher" ? "cursor-pointer" : ""}`}
+                onClick={() => {
+                  if (userRole === "teacher") {
+                    navigate(`/courses/${courseId}/evaluations/${evaluation.id}/stats`);
+                  }
+                }}
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -686,22 +707,16 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                         <span className="text-sm font-medium">{status.label}</span>
                       </div>
                       {userRole === "teacher" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditEvaluation(evaluation)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => navigate(`/courses/${courseId}/evaluations/${evaluation.id}/stats`)}
-                          >
-                            <BarChart3 className="h-4 w-4" />
-                          </Button>
-                        </>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditEvaluation(evaluation);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
                   </div>
