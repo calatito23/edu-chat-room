@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Trash2, Clock, CheckCircle, XCircle, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -39,6 +40,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(null);
   const [newEval, setNewEval] = useState({
     title: "",
     description: "",
@@ -178,6 +180,58 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     }
   };
 
+  const handleUpdateEvaluation = async () => {
+    if (!editingEvaluation || !newEval.title || !newEval.start_date || !newEval.end_date) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Completa todos los campos requeridos",
+      });
+      return;
+    }
+
+    try {
+      const { error: evalError } = await supabase
+        .from("evaluations")
+        .update({
+          title: newEval.title,
+          description: newEval.description,
+          start_date: newEval.start_date,
+          end_date: newEval.end_date,
+        })
+        .eq("id", editingEvaluation.id);
+
+      if (evalError) throw evalError;
+
+      toast({
+        title: "Éxito",
+        description: "Evaluación actualizada correctamente",
+      });
+
+      setIsDialogOpen(false);
+      setEditingEvaluation(null);
+      setNewEval({ title: "", description: "", start_date: "", end_date: "" });
+      loadEvaluations();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleEditEvaluation = (evaluation: Evaluation) => {
+    setEditingEvaluation(evaluation);
+    setNewEval({
+      title: evaluation.title,
+      description: evaluation.description || "",
+      start_date: evaluation.start_date,
+      end_date: evaluation.end_date,
+    });
+    setIsDialogOpen(true);
+  };
+
   const getEvaluationStatus = (startDate: string, endDate: string) => {
     const now = new Date();
     const start = new Date(startDate);
@@ -195,7 +249,14 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
   return (
     <div className="space-y-4">
       {userRole === "teacher" && (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            setEditingEvaluation(null);
+            setNewEval({ title: "", description: "", start_date: "", end_date: "" });
+            setQuestions([]);
+          }
+        }}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -204,7 +265,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Nueva Evaluación</DialogTitle>
+              <DialogTitle>{editingEvaluation ? "Editar Evaluación" : "Nueva Evaluación"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -242,8 +303,9 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                 </div>
               </div>
 
-              <div className="border-t pt-4">
-                <h3 className="font-semibold mb-4">Preguntas ({questions.length})</h3>
+              {!editingEvaluation && (
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-4">Preguntas ({questions.length})</h3>
                 {questions.map((q, index) => (
                   <Card key={index} className="mb-2">
                     <CardHeader className="pb-2">
@@ -334,6 +396,28 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                             <SelectItem value="false">Falso</SelectItem>
                           </SelectContent>
                         </Select>
+                      ) : currentQuestion.question_type === "multiple_select" && currentQuestion.options ? (
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">Selecciona las respuestas correctas:</p>
+                          {currentQuestion.options.map((option, idx) => (
+                            <div key={idx} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`option-${idx}`}
+                                checked={Array.isArray(currentQuestion.correct_answer) && currentQuestion.correct_answer.includes(option)}
+                                onCheckedChange={(checked) => {
+                                  const currentAnswers = Array.isArray(currentQuestion.correct_answer) 
+                                    ? currentQuestion.correct_answer 
+                                    : [];
+                                  const newAnswers = checked
+                                    ? [...currentAnswers, option]
+                                    : currentAnswers.filter(a => a !== option);
+                                  setCurrentQuestion({ ...currentQuestion, correct_answer: newAnswers });
+                                }}
+                              />
+                              <Label htmlFor={`option-${idx}`}>{option}</Label>
+                            </div>
+                          ))}
+                        </div>
                       ) : (
                         <Input
                           value={currentQuestion.correct_answer}
@@ -349,10 +433,11 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                     </Button>
                   </CardContent>
                 </Card>
-              </div>
+                </div>
+              )}
 
-              <Button onClick={handleCreateEvaluation} className="w-full">
-                Crear Evaluación
+              <Button onClick={editingEvaluation ? handleUpdateEvaluation : handleCreateEvaluation} className="w-full">
+                {editingEvaluation ? "Actualizar Evaluación" : "Crear Evaluación"}
               </Button>
             </div>
           </DialogContent>
@@ -381,9 +466,20 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                         <CardDescription className="mt-2">{evaluation.description}</CardDescription>
                       )}
                     </div>
-                    <div className={`flex items-center gap-1 ${status.color}`}>
-                      <StatusIcon className="h-4 w-4" />
-                      <span className="text-sm font-medium">{status.label}</span>
+                    <div className="flex items-center gap-2">
+                      <div className={`flex items-center gap-1 ${status.color}`}>
+                        <StatusIcon className="h-4 w-4" />
+                        <span className="text-sm font-medium">{status.label}</span>
+                      </div>
+                      {userRole === "teacher" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditEvaluation(evaluation)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
