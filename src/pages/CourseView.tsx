@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Users, FileText, Upload } from "lucide-react";
+import { ArrowLeft, Users, FileText, Upload, ClipboardList } from "lucide-react";
 import CourseStream from "@/components/CourseStream";
 import CoursePeople from "@/components/CoursePeople";
 import CourseFiles from "@/components/CourseFiles";
+import CourseEvaluations from "@/components/CourseEvaluations";
 
 /**
  * Vista detallada de un curso
@@ -206,7 +207,7 @@ const CourseView = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="stream" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="stream">
               <FileText className="h-4 w-4 mr-2" />
               Publicaciones
@@ -218,6 +219,10 @@ const CourseView = () => {
             <TabsTrigger value="files">
               <Upload className="h-4 w-4 mr-2" />
               Archivos
+            </TabsTrigger>
+            <TabsTrigger value="evaluations">
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Evaluaciones
             </TabsTrigger>
           </TabsList>
 
@@ -231,6 +236,10 @@ const CourseView = () => {
 
           <TabsContent value="files" className="mt-6">
             <CourseFiles courseId={courseId!} userRole={userRole!} teacherId={course?.teacher_id} />
+          </TabsContent>
+
+          <TabsContent value="evaluations" className="mt-6">
+            <CourseEvaluations courseId={courseId!} userRole={userRole!} />
           </TabsContent>
         </Tabs>
       </main>

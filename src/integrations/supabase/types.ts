@@ -108,6 +108,174 @@ export type Database = {
         }
         Relationships: []
       }
+      evaluation_answers: {
+        Row: {
+          answer: Json
+          created_at: string | null
+          id: string
+          is_correct: boolean | null
+          points_earned: number | null
+          question_id: string
+          submission_id: string
+        }
+        Insert: {
+          answer: Json
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          points_earned?: number | null
+          question_id: string
+          submission_id: string
+        }
+        Update: {
+          answer?: Json
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          points_earned?: number | null
+          question_id?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluation_answers_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "evaluation_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_questions: {
+        Row: {
+          correct_answer: Json
+          created_at: string | null
+          evaluation_id: string
+          id: string
+          options: Json | null
+          order_number: number
+          points: number | null
+          question_text: string
+          question_type: Database["public"]["Enums"]["question_type"]
+        }
+        Insert: {
+          correct_answer: Json
+          created_at?: string | null
+          evaluation_id: string
+          id?: string
+          options?: Json | null
+          order_number: number
+          points?: number | null
+          question_text: string
+          question_type: Database["public"]["Enums"]["question_type"]
+        }
+        Update: {
+          correct_answer?: Json
+          created_at?: string | null
+          evaluation_id?: string
+          id?: string
+          options?: Json | null
+          order_number?: number
+          points?: number | null
+          question_text?: string
+          question_type?: Database["public"]["Enums"]["question_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_questions_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluation_submissions: {
+        Row: {
+          evaluation_id: string
+          id: string
+          score: number | null
+          student_id: string
+          submitted_at: string | null
+          total_points: number | null
+        }
+        Insert: {
+          evaluation_id: string
+          id?: string
+          score?: number | null
+          student_id: string
+          submitted_at?: string | null
+          total_points?: number | null
+        }
+        Update: {
+          evaluation_id?: string
+          id?: string
+          score?: number | null
+          student_id?: string
+          submitted_at?: string | null
+          total_points?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluation_submissions_evaluation_id_fkey"
+            columns: ["evaluation_id"]
+            isOneToOne: false
+            referencedRelation: "evaluations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evaluations: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          created_by: string
+          description: string | null
+          end_date: string
+          id: string
+          start_date: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          end_date: string
+          id?: string
+          start_date: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       files: {
         Row: {
           course_id: string
@@ -284,6 +452,13 @@ export type Database = {
       }
     }
     Enums: {
+      question_type:
+        | "short_answer"
+        | "multiple_choice"
+        | "multiple_select"
+        | "file_upload"
+        | "true_false"
+        | "matching"
       user_role: "student" | "teacher"
     }
     CompositeTypes: {
@@ -412,6 +587,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      question_type: [
+        "short_answer",
+        "multiple_choice",
+        "multiple_select",
+        "file_upload",
+        "true_false",
+        "matching",
+      ],
       user_role: ["student", "teacher"],
     },
   },
