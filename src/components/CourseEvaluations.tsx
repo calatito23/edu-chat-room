@@ -131,14 +131,18 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("No autenticado");
 
+      // Convertir datetime-local a ISO string preservando la hora local
+      const startDate = new Date(newEval.start_date).toISOString();
+      const endDate = new Date(newEval.end_date).toISOString();
+
       const { data: evalData, error: evalError } = await supabase
         .from("evaluations")
         .insert({
           course_id: courseId,
           title: newEval.title,
           description: newEval.description,
-          start_date: newEval.start_date,
-          end_date: newEval.end_date,
+          start_date: startDate,
+          end_date: endDate,
           created_by: user.user.id,
         })
         .select()
@@ -191,13 +195,17 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     }
 
     try {
+      // Convertir datetime-local a ISO string preservando la hora local
+      const startDate = new Date(newEval.start_date).toISOString();
+      const endDate = new Date(newEval.end_date).toISOString();
+      
       const { error: evalError } = await supabase
         .from("evaluations")
         .update({
           title: newEval.title,
           description: newEval.description,
-          start_date: newEval.start_date,
-          end_date: newEval.end_date,
+          start_date: startDate,
+          end_date: endDate,
         })
         .eq("id", editingEvaluation.id);
 
