@@ -147,9 +147,13 @@ export default function CourseGrades({ courseId }: CourseGradesProps) {
                     const grade = getGrade(student.id, evaluation.id);
                     return (
                       <td key={evaluation.id} className="p-3 text-center">
-                        {grade ? (
+                        {grade && grade.score !== null && grade.total_points !== null ? (
                           <span className="font-semibold">
                             {grade.score.toFixed(1)} / {grade.total_points}
+                          </span>
+                        ) : grade ? (
+                          <span className="text-muted-foreground text-sm">
+                            Por calificar
                           </span>
                         ) : (
                           <span className="text-muted-foreground text-sm italic">
