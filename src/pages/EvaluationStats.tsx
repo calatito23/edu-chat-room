@@ -403,30 +403,36 @@ export default function EvaluationStats() {
                           Puntos obtenidos:
                         </p>
                         <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            max={question.points}
-                            step="0.1"
-                            value={editedPoints[answer.id] || 0}
-                            onChange={(e) => {
-                              const value = Math.min(
-                                Math.max(0, parseFloat(e.target.value) || 0),
-                                question.points
-                              );
-                              setEditedPoints(prev => ({
-                                ...prev,
-                                [answer.id]: value
-                              }));
-                            }}
-                            className="w-24"
-                          />
+                          {question.question_type === "short_answer" || question.question_type === "file_upload" ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              max={question.points}
+                              step="0.1"
+                              value={editedPoints[answer.id] || 0}
+                              onChange={(e) => {
+                                const value = Math.min(
+                                  Math.max(0, parseFloat(e.target.value) || 0),
+                                  question.points
+                                );
+                                setEditedPoints(prev => ({
+                                  ...prev,
+                                  [answer.id]: value
+                                }));
+                              }}
+                              className="w-24"
+                            />
+                          ) : (
+                            <span className="text-base font-semibold">
+                              {answer.points_earned || 0}
+                            </span>
+                          )}
                           <span className="text-sm text-muted-foreground">
                             / {question.points}
                           </span>
                         </div>
                       </div>
-                      {!needsReview && (
+                      {question.question_type !== "short_answer" && question.question_type !== "file_upload" && (
                         <div className={`px-3 py-1 rounded text-sm font-medium ${
                           answer.is_correct 
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
