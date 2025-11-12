@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Eye, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, RefreshCw, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -42,7 +43,9 @@ export default function EvaluationStats() {
   const [evaluation, setEvaluation] = useState<any>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [viewingAnswers, setViewingAnswers] = useState<{ submission: Submission; answers: Answer[] } | null>(null);
+  const [editedPoints, setEditedPoints] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -121,6 +124,13 @@ export default function EvaluationStats() {
         a.evaluation_questions.order_number - b.evaluation_questions.order_number
       );
 
+      // Inicializar puntos editables
+      const initialPoints: Record<string, number> = {};
+      transformedAnswers.forEach(answer => {
+        initialPoints[answer.id] = answer.points_earned || 0;
+      });
+      setEditedPoints(initialPoints);
+
       setViewingAnswers({ submission, answers: transformedAnswers as Answer[] });
     } catch (error: any) {
       toast({
@@ -128,6 +138,62 @@ export default function EvaluationStats() {
         title: "Error",
         description: error.message,
       });
+    }
+  };
+
+  const handleSaveGrades = async () => {
+    if (!viewingAnswers) return;
+
+    setSaving(true);
+    try {
+      // Actualizar cada respuesta con los puntos editados
+      for (const [answerId, points] of Object.entries(editedPoints)) {
+        const answer = viewingAnswers.answers.find(a => a.id === answerId);
+        if (!answer) continue;
+
+        const { error } = await supabase
+          .from("evaluation_answers")
+          .update({ 
+            points_earned: points,
+            is_correct: points === answer.evaluation_questions.points
+          })
+          .eq("id", answerId);
+
+        if (error) throw error;
+      }
+
+      // Recalcular puntaje total
+      const totalEarned = Object.values(editedPoints).reduce((sum, points) => sum + points, 0);
+      const totalPossible = viewingAnswers.answers.reduce(
+        (sum, answer) => sum + answer.evaluation_questions.points, 
+        0
+      );
+
+      const { error: submissionError } = await supabase
+        .from("evaluation_submissions")
+        .update({
+          score: totalEarned,
+          total_points: totalPossible,
+        })
+        .eq("id", viewingAnswers.submission.id);
+
+      if (submissionError) throw submissionError;
+
+      toast({
+        title: "Éxito",
+        description: "Calificaciones guardadas correctamente",
+      });
+
+      setViewingAnswers(null);
+      loadData();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -256,7 +322,8 @@ export default function EvaluationStats() {
                 {submissions.map((submission) => (
                   <div
                     key={submission.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors"
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent transition-colors cursor-pointer"
+                    onClick={() => handleViewAnswers(submission)}
                   >
                     <div className="flex-1">
                       <p className="font-medium">{submission.profiles?.full_name || "Usuario"}</p>
@@ -267,24 +334,17 @@ export default function EvaluationStats() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewAnswers(submission)}
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver respuestas
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRetryEvaluation(submission)}
-                      >
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Nuevo intento
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRetryEvaluation(submission);
+                      }}
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Nuevo intento
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -293,12 +353,16 @@ export default function EvaluationStats() {
         )}
       </div>
 
-      {/* Dialog para ver respuestas */}
+      {/* Dialog para ver y calificar respuestas */}
       <Dialog open={!!viewingAnswers} onOpenChange={(open) => !open && setViewingAnswers(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Respuestas de {viewingAnswers?.submission.profiles?.full_name || "Usuario"}
+            <DialogTitle className="flex items-center justify-between">
+              <span>Respuestas de {viewingAnswers?.submission.profiles?.full_name || "Usuario"}</span>
+              <Button onClick={handleSaveGrades} disabled={saving} size="sm">
+                <Save className="mr-2 h-4 w-4" />
+                {saving ? "Guardando..." : "Guardar calificaciones"}
+              </Button>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
@@ -313,10 +377,10 @@ export default function EvaluationStats() {
                       {index + 1}. {question.question_text}
                     </CardTitle>
                     <CardDescription>
-                      {question.points} puntos - {needsReview ? "Necesita revisión manual" : answer.is_correct ? "Correcta" : "Incorrecta"}
+                      Puntaje máximo: {question.points} puntos
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-2">
+                  <CardContent className="space-y-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Respuesta del estudiante:</p>
                       <p className="text-sm">
@@ -333,10 +397,44 @@ export default function EvaluationStats() {
                         </p>
                       </div>
                     )}
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Puntos obtenidos: {needsReview ? "Por calificar" : `${answer.points_earned || 0} / ${question.points}`}
-                      </p>
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-muted-foreground mb-2">
+                          Puntos obtenidos:
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            max={question.points}
+                            step="0.1"
+                            value={editedPoints[answer.id] || 0}
+                            onChange={(e) => {
+                              const value = Math.min(
+                                Math.max(0, parseFloat(e.target.value) || 0),
+                                question.points
+                              );
+                              setEditedPoints(prev => ({
+                                ...prev,
+                                [answer.id]: value
+                              }));
+                            }}
+                            className="w-24"
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            / {question.points}
+                          </span>
+                        </div>
+                      </div>
+                      {!needsReview && (
+                        <div className={`px-3 py-1 rounded text-sm font-medium ${
+                          answer.is_correct 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}>
+                          {answer.is_correct ? "Correcta" : "Incorrecta"}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
