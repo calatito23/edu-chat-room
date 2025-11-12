@@ -41,6 +41,9 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(null);
+  const [takingEvaluation, setTakingEvaluation] = useState<Evaluation | null>(null);
+  const [evaluationQuestions, setEvaluationQuestions] = useState<Question[]>([]);
+  const [studentAnswers, setStudentAnswers] = useState<Record<string, any>>({});
   const [newEval, setNewEval] = useState({
     title: "",
     description: "",
@@ -253,6 +256,102 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       end_date: formatToLocalDatetime(endDate),
     });
     setIsDialogOpen(true);
+  };
+
+  const handleTakeEvaluation = async (evaluation: Evaluation) => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("No autenticado");
+
+      // Verificar si ya completó esta evaluación
+      const { data: existingSubmission } = await supabase
+        .from("evaluation_submissions")
+        .select("id")
+        .eq("evaluation_id", evaluation.id)
+        .eq("student_id", user.user.id)
+        .maybeSingle();
+
+      if (existingSubmission) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Ya completaste esta evaluación",
+        });
+        return;
+      }
+
+      // Cargar preguntas
+      const { data: questionsData, error: questionsError } = await supabase
+        .from("evaluation_questions")
+        .select("*")
+        .eq("evaluation_id", evaluation.id)
+        .order("order_number");
+
+      if (questionsError) throw questionsError;
+
+      setEvaluationQuestions(questionsData?.map(q => ({
+        ...q,
+        options: Array.isArray(q.options) ? q.options as string[] : [],
+      })) || []);
+      setTakingEvaluation(evaluation);
+      setStudentAnswers({});
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleSubmitEvaluation = async () => {
+    if (!takingEvaluation) return;
+
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("No autenticado");
+
+      // Crear submission
+      const { data: submissionData, error: submissionError } = await supabase
+        .from("evaluation_submissions")
+        .insert({
+          evaluation_id: takingEvaluation.id,
+          student_id: user.user.id,
+        })
+        .select()
+        .single();
+
+      if (submissionError) throw submissionError;
+
+      // Insertar respuestas
+      const answersToInsert = evaluationQuestions.map((q) => ({
+        submission_id: submissionData.id,
+        question_id: q.id,
+        answer: studentAnswers[q.id!] || null,
+      }));
+
+      const { error: answersError } = await supabase
+        .from("evaluation_answers")
+        .insert(answersToInsert);
+
+      if (answersError) throw answersError;
+
+      toast({
+        title: "Éxito",
+        description: "Evaluación enviada correctamente",
+      });
+
+      setTakingEvaluation(null);
+      setEvaluationQuestions([]);
+      setStudentAnswers({});
+      loadEvaluations();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
   };
 
   const getEvaluationStatus = (startDate: string, endDate: string) => {
@@ -507,9 +606,16 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex justify-between items-center text-sm text-muted-foreground">
-                    <span>Inicio: {format(new Date(evaluation.start_date), "dd/MM/yyyy HH:mm")}</span>
-                    <span>Fin: {format(new Date(evaluation.end_date), "dd/MM/yyyy HH:mm")}</span>
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-muted-foreground">
+                      <div>Inicio: {format(new Date(evaluation.start_date), "dd/MM/yyyy HH:mm")}</div>
+                      <div>Fin: {format(new Date(evaluation.end_date), "dd/MM/yyyy HH:mm")}</div>
+                    </div>
+                    {userRole === "student" && status.label === "Disponible" && (
+                      <Button onClick={() => handleTakeEvaluation(evaluation)}>
+                        Tomar Evaluación
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -517,6 +623,144 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
           })
         )}
       </div>
+
+      {/* Diálogo para tomar evaluación (estudiantes) */}
+      <Dialog open={!!takingEvaluation} onOpenChange={(open) => !open && setTakingEvaluation(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{takingEvaluation?.title}</DialogTitle>
+            {takingEvaluation?.description && (
+              <p className="text-sm text-muted-foreground">{takingEvaluation.description}</p>
+            )}
+          </DialogHeader>
+          <div className="space-y-6">
+            {evaluationQuestions.map((question, index) => (
+              <Card key={question.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {index + 1}. {question.question_text}
+                  </CardTitle>
+                  <CardDescription>{question.points} puntos</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {question.question_type === "short_answer" && (
+                    <Textarea
+                      placeholder="Escribe tu respuesta aquí"
+                      value={studentAnswers[question.id!] || ""}
+                      onChange={(e) =>
+                        setStudentAnswers({ ...studentAnswers, [question.id!]: e.target.value })
+                      }
+                    />
+                  )}
+                  
+                  {question.question_type === "multiple_choice" && question.options && (
+                    <div className="space-y-2">
+                      {question.options.map((option, idx) => (
+                        <div key={idx} className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id={`q${question.id}-opt${idx}`}
+                            name={`question-${question.id}`}
+                            value={option}
+                            checked={studentAnswers[question.id!] === option}
+                            onChange={(e) =>
+                              setStudentAnswers({ ...studentAnswers, [question.id!]: e.target.value })
+                            }
+                          />
+                          <Label htmlFor={`q${question.id}-opt${idx}`}>{option}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {question.question_type === "multiple_select" && question.options && (
+                    <div className="space-y-2">
+                      {question.options.map((option, idx) => (
+                        <div key={idx} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`q${question.id}-opt${idx}`}
+                            checked={
+                              Array.isArray(studentAnswers[question.id!]) &&
+                              studentAnswers[question.id!].includes(option)
+                            }
+                            onCheckedChange={(checked) => {
+                              const current = Array.isArray(studentAnswers[question.id!])
+                                ? studentAnswers[question.id!]
+                                : [];
+                              const newAnswers = checked
+                                ? [...current, option]
+                                : current.filter((a: string) => a !== option);
+                              setStudentAnswers({ ...studentAnswers, [question.id!]: newAnswers });
+                            }}
+                          />
+                          <Label htmlFor={`q${question.id}-opt${idx}`}>{option}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {question.question_type === "true_false" && (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id={`q${question.id}-true`}
+                          name={`question-${question.id}`}
+                          value="true"
+                          checked={studentAnswers[question.id!] === "true"}
+                          onChange={(e) =>
+                            setStudentAnswers({ ...studentAnswers, [question.id!]: e.target.value })
+                          }
+                        />
+                        <Label htmlFor={`q${question.id}-true`}>Verdadero</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id={`q${question.id}-false`}
+                          name={`question-${question.id}`}
+                          value="false"
+                          checked={studentAnswers[question.id!] === "false"}
+                          onChange={(e) =>
+                            setStudentAnswers({ ...studentAnswers, [question.id!]: e.target.value })
+                          }
+                        />
+                        <Label htmlFor={`q${question.id}-false`}>Falso</Label>
+                      </div>
+                    </div>
+                  )}
+
+                  {question.question_type === "file_upload" && (
+                    <Input
+                      type="file"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setStudentAnswers({ ...studentAnswers, [question.id!]: file.name });
+                        }
+                      }}
+                    />
+                  )}
+
+                  {question.question_type === "matching" && (
+                    <Textarea
+                      placeholder="Escribe tus respuestas de relacionar aquí"
+                      value={studentAnswers[question.id!] || ""}
+                      onChange={(e) =>
+                        setStudentAnswers({ ...studentAnswers, [question.id!]: e.target.value })
+                      }
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+
+            <Button onClick={handleSubmitEvaluation} className="w-full">
+              Enviar Evaluación
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
