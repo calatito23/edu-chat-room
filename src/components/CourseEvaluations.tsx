@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Clock, CheckCircle, XCircle, Edit, BarChart3, Eye } from "lucide-react";
+import { Plus, Trash2, Clock, CheckCircle, XCircle, Edit, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -31,40 +32,18 @@ interface Question {
   points: number;
 }
 
-interface Submission {
-  id: string;
-  student_id: string;
-  submitted_at: string;
-  score: number | null;
-  total_points: number | null;
-  profiles?: {
-    full_name: string;
-  };
-}
-
-interface Answer {
-  id: string;
-  question_id: string;
-  answer: any;
-  is_correct: boolean | null;
-  points_earned: number | null;
-  evaluation_questions: Question;
-}
-
 interface CourseEvaluationsProps {
   courseId: string;
   userRole: "teacher" | "student";
 }
 
 export default function CourseEvaluations({ courseId, userRole }: CourseEvaluationsProps) {
+  const navigate = useNavigate();
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvaluation, setEditingEvaluation] = useState<Evaluation | null>(null);
   const [takingEvaluation, setTakingEvaluation] = useState<Evaluation | null>(null);
-  const [viewingStats, setViewingStats] = useState<Evaluation | null>(null);
-  const [viewingAnswers, setViewingAnswers] = useState<{ submission: Submission; answers: Answer[] } | null>(null);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [evaluationQuestions, setEvaluationQuestions] = useState<Question[]>([]);
   const [studentAnswers, setStudentAnswers] = useState<Record<string, any>>({});
   const [userSubmissions, setUserSubmissions] = useState<Record<string, boolean>>({});
@@ -336,6 +315,21 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     }
   };
 
+  const needsManualReview = (question: Question) => {
+    // Solo necesita revisión manual si:
+    // 1. No hay respuesta correcta definida
+    // 2. O es pregunta de texto/archivo/matching
+    const hasNoCorrectAnswer = !question.correct_answer || 
+      (typeof question.correct_answer === 'string' && question.correct_answer.trim() === '') ||
+      (Array.isArray(question.correct_answer) && question.correct_answer.length === 0);
+    
+    const isOpenQuestion = question.question_type === "short_answer" || 
+                          question.question_type === "file_upload" || 
+                          question.question_type === "matching";
+    
+    return hasNoCorrectAnswer || isOpenQuestion;
+  };
+
   const calculateScore = (questions: Question[], answers: Record<string, any>) => {
     let totalPoints = 0;
     let earnedPoints = 0;
@@ -345,18 +339,18 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       const studentAnswer = answers[question.id!];
       const correctAnswer = question.correct_answer;
 
+      // Si necesita revisión manual, no sumar puntos automáticamente
+      if (needsManualReview(question)) {
+        return;
+      }
+
       let isCorrect = false;
 
       if (question.question_type === "multiple_select") {
-        // Para selección múltiple, comparar arrays
         const studentArr = Array.isArray(studentAnswer) ? studentAnswer.sort() : [];
         const correctArr = Array.isArray(correctAnswer) ? correctAnswer.sort() : [];
         isCorrect = JSON.stringify(studentArr) === JSON.stringify(correctArr);
-      } else if (question.question_type === "short_answer" || question.question_type === "file_upload" || question.question_type === "matching") {
-        // Para respuestas abiertas, no calificar automáticamente
-        isCorrect = false;
       } else {
-        // Para el resto, comparación directa
         isCorrect = studentAnswer === correctAnswer;
       }
 
@@ -396,21 +390,26 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       const answersToInsert = evaluationQuestions.map((q) => {
         const studentAnswer = studentAnswers[q.id!] || null;
         const correctAnswer = q.correct_answer;
+        
+        // Si necesita revisión manual, no calificar
+        if (needsManualReview(q)) {
+          return {
+            submission_id: submissionData.id,
+            question_id: q.id,
+            answer: studentAnswer,
+            is_correct: null,
+            points_earned: 0,
+          };
+        }
+
         let isCorrect = false;
-        let pointsEarned = 0;
 
         if (q.question_type === "multiple_select") {
           const studentArr = Array.isArray(studentAnswer) ? studentAnswer.sort() : [];
           const correctArr = Array.isArray(correctAnswer) ? correctAnswer.sort() : [];
           isCorrect = JSON.stringify(studentArr) === JSON.stringify(correctArr);
-        } else if (q.question_type === "short_answer" || q.question_type === "file_upload" || q.question_type === "matching") {
-          isCorrect = false; // Requiere calificación manual
         } else {
           isCorrect = studentAnswer === correctAnswer;
-        }
-
-        if (isCorrect) {
-          pointsEarned = q.points;
         }
 
         return {
@@ -418,7 +417,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
           question_id: q.id,
           answer: studentAnswer,
           is_correct: isCorrect,
-          points_earned: pointsEarned,
+          points_earned: isCorrect ? q.points : 0,
         };
       });
 
@@ -455,81 +454,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     if (now < start) return { label: "Próximamente", icon: Clock, color: "text-yellow-600" };
     if (now > end) return { label: "Finalizada", icon: XCircle, color: "text-red-600" };
     return { label: "Disponible", icon: CheckCircle, color: "text-green-600" };
-  };
-
-  const handleViewStats = async (evaluation: Evaluation) => {
-    try {
-      const { data, error } = await supabase
-        .from("evaluation_submissions")
-        .select("*")
-        .eq("evaluation_id", evaluation.id)
-        .order("submitted_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Cargar perfiles por separado
-      if (data && data.length > 0) {
-        const studentIds = data.map(s => s.student_id);
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", studentIds);
-
-        const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-        
-        const submissionsWithProfiles = data.map(sub => ({
-          ...sub,
-          profiles: profilesMap.get(sub.student_id),
-        }));
-
-        setSubmissions(submissionsWithProfiles as Submission[]);
-      } else {
-        setSubmissions([]);
-      }
-
-      setViewingStats(evaluation);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    }
-  };
-
-  const handleViewAnswers = async (submission: Submission) => {
-    try {
-      const { data, error } = await supabase
-        .from("evaluation_answers")
-        .select(`
-          *,
-          evaluation_questions (*)
-        `)
-        .eq("submission_id", submission.id);
-
-      if (error) throw error;
-
-      // Transformar y ordenar los datos
-      const transformedAnswers = (data || []).map(a => ({
-        ...a,
-        evaluation_questions: {
-          ...a.evaluation_questions,
-          options: Array.isArray(a.evaluation_questions.options) 
-            ? a.evaluation_questions.options as string[]
-            : [],
-        }
-      })).sort((a, b) => 
-        a.evaluation_questions.order_number - b.evaluation_questions.order_number
-      );
-
-      setViewingAnswers({ submission, answers: transformedAnswers as Answer[] });
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    }
   };
 
   if (loading) {
@@ -773,7 +697,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleViewStats(evaluation)}
+                            onClick={() => navigate(`/courses/${courseId}/evaluations/${evaluation.id}/stats`)}
                           >
                             <BarChart3 className="h-4 w-4" />
                           </Button>
@@ -938,113 +862,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
             <Button onClick={handleSubmitEvaluation} className="w-full">
               Enviar Evaluación
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo de estadísticas (profesores) */}
-      <Dialog open={!!viewingStats} onOpenChange={(open) => !open && setViewingStats(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Estadísticas - {viewingStats?.title}</DialogTitle>
-            <CardDescription>
-              {submissions.length} {submissions.length === 1 ? "entrega" : "entregas"}
-            </CardDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {submissions.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                Aún no hay entregas para esta evaluación
-              </p>
-            ) : (
-              submissions.map((submission) => (
-                <Card key={submission.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-base">
-                          {submission.profiles?.full_name || "Usuario"}
-                        </CardTitle>
-                        <CardDescription>
-                          Entregado: {format(new Date(submission.submitted_at), "dd/MM/yyyy HH:mm")}
-                        </CardDescription>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-semibold">
-                          {submission.score !== null ? submission.score : "Por calificar"} / {submission.total_points || 0}
-                        </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewAnswers(submission)}
-                          className="mt-2"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver respuestas
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo para ver respuestas individuales */}
-      <Dialog open={!!viewingAnswers} onOpenChange={(open) => !open && setViewingAnswers(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Respuestas de {viewingAnswers?.submission.profiles?.full_name || "Usuario"}
-            </DialogTitle>
-            <CardDescription>
-              Puntuación: {viewingAnswers?.submission.score || 0} / {viewingAnswers?.submission.total_points || 0}
-            </CardDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {viewingAnswers?.answers.map((answer, index) => (
-              <Card key={answer.id}>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    {index + 1}. {answer.evaluation_questions.question_text}
-                  </CardTitle>
-                  <CardDescription>
-                    {answer.evaluation_questions.points} puntos | 
-                    Tipo: {answer.evaluation_questions.question_type}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div>
-                    <Label className="text-sm font-semibold">Respuesta del estudiante:</Label>
-                    <p className="text-sm mt-1">
-                      {Array.isArray(answer.answer) 
-                        ? answer.answer.join(", ") 
-                        : answer.answer || "(Sin respuesta)"}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-semibold">Respuesta correcta:</Label>
-                    <p className="text-sm mt-1">
-                      {Array.isArray(answer.evaluation_questions.correct_answer)
-                        ? answer.evaluation_questions.correct_answer.join(", ")
-                        : answer.evaluation_questions.correct_answer}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <span className={`text-sm font-semibold ${
-                      answer.is_correct ? "text-green-600" : "text-red-600"
-                    }`}>
-                      {answer.is_correct ? "✓ Correcta" : answer.is_correct === false ? "✗ Incorrecta" : "⚠ Requiere revisión manual"}
-                    </span>
-                    <span className="text-sm font-semibold">
-                      Puntos obtenidos: {answer.points_earned || 0}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </DialogContent>
       </Dialog>
