@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Users, FileText, Upload, ClipboardList, Award } from "lucide-react";
+import { ArrowLeft, Users, FileText, Upload, ClipboardList, Award, Video } from "lucide-react";
 import CourseStream from "@/components/CourseStream";
 import CoursePeople from "@/components/CoursePeople";
 import CourseFiles from "@/components/CourseFiles";
 import CourseEvaluations from "@/components/CourseEvaluations";
 import CourseGrades from "@/components/CourseGrades";
+import CourseZoom from "@/components/CourseZoom";
 
 /**
  * Vista detallada de un curso
@@ -208,7 +209,7 @@ const CourseView = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="stream" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+          <TabsList className="grid w-full grid-cols-6 max-w-4xl">
             <TabsTrigger value="stream">
               <FileText className="h-4 w-4 mr-2" />
               Publicaciones
@@ -228,6 +229,10 @@ const CourseView = () => {
             <TabsTrigger value="grades">
               <Award className="h-4 w-4 mr-2" />
               Notas
+            </TabsTrigger>
+            <TabsTrigger value="zoom">
+              <Video className="h-4 w-4 mr-2" />
+              Zoom
             </TabsTrigger>
           </TabsList>
 
@@ -249,6 +254,10 @@ const CourseView = () => {
 
           <TabsContent value="grades" className="mt-6">
             <CourseGrades courseId={courseId!} />
+          </TabsContent>
+
+          <TabsContent value="zoom" className="mt-6">
+            <CourseZoom courseId={courseId!} />
           </TabsContent>
         </Tabs>
       </main>
