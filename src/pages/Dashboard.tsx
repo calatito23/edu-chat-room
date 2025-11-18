@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, LogOut, MessageSquare, BookOpen, Plus, Users } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import { Notifications } from "@/components/Notifications";
 
 /**
  * Dashboard principal del aula virtual
@@ -199,6 +200,7 @@ const Dashboard = () => {
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Chat
               </Button>
+              <Notifications />
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Salir
