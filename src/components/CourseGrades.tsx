@@ -10,6 +10,7 @@ import { Settings } from "lucide-react";
 
 interface CourseGradesProps {
   courseId: string;
+  userRole: "teacher" | "student";
 }
 
 interface Student {
@@ -29,7 +30,7 @@ interface Grade {
   total_points: number;
 }
 
-export default function CourseGrades({ courseId }: CourseGradesProps) {
+export default function CourseGrades({ courseId, userRole }: CourseGradesProps) {
   const [students, setStudents] = useState<Student[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
@@ -37,6 +38,7 @@ export default function CourseGrades({ courseId }: CourseGradesProps) {
   const [weights, setWeights] = useState<Record<string, number>>({});
   const [tempWeights, setTempWeights] = useState<Record<string, number>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,24 +59,41 @@ export default function CourseGrades({ courseId }: CourseGradesProps) {
 
   const loadGradesData = async () => {
     try {
-      // Cargar estudiantes inscritos
-      const { data: enrollmentsData, error: enrollmentsError } = await supabase
-        .from("course_enrollments")
-        .select("student_id")
-        .eq("course_id", courseId);
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setCurrentUserId(user.id);
 
-      if (enrollmentsError) throw enrollmentsError;
+      if (userRole === "teacher") {
+        // Cargar todos los estudiantes inscritos (vista de profesor)
+        const { data: enrollmentsData, error: enrollmentsError } = await supabase
+          .from("course_enrollments")
+          .select("student_id")
+          .eq("course_id", courseId);
 
-      if (enrollmentsData && enrollmentsData.length > 0) {
-        const studentIds = enrollmentsData.map(e => e.student_id);
-        const { data: studentsData, error: studentsError } = await supabase
+        if (enrollmentsError) throw enrollmentsError;
+
+        if (enrollmentsData && enrollmentsData.length > 0) {
+          const studentIds = enrollmentsData.map(e => e.student_id);
+          const { data: studentsData, error: studentsError } = await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .in("id", studentIds)
+            .order("full_name");
+
+          if (studentsError) throw studentsError;
+          setStudents(studentsData || []);
+        }
+      } else {
+        // Cargar solo el perfil del estudiante actual
+        const { data: studentData, error: studentError } = await supabase
           .from("profiles")
           .select("id, full_name")
-          .in("id", studentIds)
-          .order("full_name");
+          .eq("id", user.id)
+          .single();
 
-        if (studentsError) throw studentsError;
-        setStudents(studentsData || []);
+        if (studentError) throw studentError;
+        setStudents(studentData ? [studentData] : []);
       }
 
       // Cargar evaluaciones
@@ -88,10 +107,17 @@ export default function CourseGrades({ courseId }: CourseGradesProps) {
       setEvaluations(evaluationsData || []);
 
       // Cargar notas
-      const { data: gradesData, error: gradesError } = await supabase
+      const gradesQuery = supabase
         .from("evaluation_submissions")
         .select("student_id, evaluation_id, score, total_points")
         .in("evaluation_id", (evaluationsData || []).map(e => e.id));
+
+      // Si es estudiante, filtrar solo sus notas
+      if (userRole === "student") {
+        gradesQuery.eq("student_id", user.id);
+      }
+
+      const { data: gradesData, error: gradesError } = await gradesQuery;
 
       if (gradesError) throw gradesError;
       setGrades(gradesData || []);
