@@ -350,6 +350,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          read: boolean
+          sender_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message: string
+          read?: boolean
+          sender_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          sender_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           author_id: string
@@ -556,6 +592,17 @@ export type Database = {
       can_access_course_files: {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
+      }
+      create_notification: {
+        Args: {
+          _link?: string
+          _message: string
+          _sender_id: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
       }
       has_role: {
         Args: {
