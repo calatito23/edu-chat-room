@@ -456,6 +456,73 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     setIsDialogOpen(true);
   };
 
+  const handleDeleteEvaluation = async (evaluationId: string) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar esta evaluación? Esto eliminará también todas las notas y respuestas asociadas.")) {
+      return;
+    }
+
+    try {
+      // Primero obtener todas las submissions asociadas a esta evaluación
+      const { data: submissions, error: submissionsError } = await supabase
+        .from("evaluation_submissions")
+        .select("id")
+        .eq("evaluation_id", evaluationId);
+
+      if (submissionsError) throw submissionsError;
+
+      // Eliminar todas las respuestas de estas submissions
+      if (submissions && submissions.length > 0) {
+        const submissionIds = submissions.map(s => s.id);
+        const { error: answersError } = await supabase
+          .from("evaluation_answers")
+          .delete()
+          .in("submission_id", submissionIds);
+
+        if (answersError) throw answersError;
+      }
+
+      // Eliminar las submissions
+      const { error: submissionsDeleteError } = await supabase
+        .from("evaluation_submissions")
+        .delete()
+        .eq("evaluation_id", evaluationId);
+
+      if (submissionsDeleteError) throw submissionsDeleteError;
+
+      // Eliminar las preguntas
+      const { error: questionsError } = await supabase
+        .from("evaluation_questions")
+        .delete()
+        .eq("evaluation_id", evaluationId);
+
+      if (questionsError) throw questionsError;
+
+      // Finalmente eliminar la evaluación
+      const { error: evalError } = await supabase
+        .from("evaluations")
+        .delete()
+        .eq("id", evaluationId);
+
+      if (evalError) throw evalError;
+
+      toast({
+        title: "Éxito",
+        description: "Evaluación eliminada correctamente",
+      });
+
+      loadEvaluations();
+      if (userRole === "student") {
+        loadUserSubmissions();
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
   const handleTakeEvaluation = async (evaluation: Evaluation) => {
     try {
       const { data: user } = await supabase.auth.getUser();
@@ -722,9 +789,9 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                       Agregar Nueva Pregunta
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label className="flex items-center justify-between">
+                  <CardContent className="space-y-6 p-6">
+                    <div className="space-y-3">
+                      <Label className="flex items-center justify-between mb-2">
                         <span>Pregunta</span>
                         <span className="text-xs text-muted-foreground">Puedes pegar imágenes con Ctrl+V</span>
                       </Label>
@@ -733,7 +800,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                         onChange={(e) => setCurrentQuestion({ ...currentQuestion, question_text: e.target.value })}
                         onPaste={handlePasteImage}
                         placeholder="Escribe tu pregunta aquí (puedes pegar imágenes)"
-                        className="min-h-[100px]"
+                        className="min-h-[140px]"
                       />
                       <div className="mt-2 flex gap-2">
                         <input
@@ -948,16 +1015,29 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                         <span className="text-sm font-medium">{status.label}</span>
                       </div>
                       {userRole === "teacher" && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditEvaluation(evaluation);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditEvaluation(evaluation);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteEvaluation(evaluation.id);
+                            }}
+                            className="hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
