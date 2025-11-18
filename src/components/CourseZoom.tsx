@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Video, Calendar, Clock, ExternalLink, Trash2 } from "lucide-react";
+import { Video, Calendar, Clock, ExternalLink, Trash2, Upload as UploadIcon } from "lucide-react";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 interface CourseZoomProps {
   courseId: string;
@@ -20,11 +22,13 @@ interface ZoomMeeting {
   duration: number;
   join_url: string;
   password?: string;
+  week_number: number;
 }
 
 
 const CourseZoom = ({ courseId }: CourseZoomProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [meetings, setMeetings] = useState<ZoomMeeting[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -32,6 +36,7 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
     topic: "",
     start_time: "",
     duration: 60,
+    week_number: 1,
   });
 
   useEffect(() => {
@@ -85,6 +90,7 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
           start_time: startTimeISO,
           duration: formData.duration,
           course_id: courseId,
+          week_number: formData.week_number,
         },
       });
 
@@ -95,7 +101,7 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
         description: "La reunión de Zoom ha sido creada exitosamente",
       });
 
-      setFormData({ topic: "", start_time: "", duration: 60 });
+      setFormData({ topic: "", start_time: "", duration: 60, week_number: 1 });
       loadMeetings();
     } catch (error: any) {
       console.error("Error creating meeting:", error);
@@ -109,7 +115,28 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
     }
   };
 
+  const handleUploadRecording = (weekNumber: number) => {
+    // Detectar el sistema operativo
+    const userAgent = navigator.userAgent.toLowerCase();
+    let zoomPath = "";
+    
+    if (userAgent.indexOf("win") !== -1) {
+      zoomPath = "C:\\Usuarios\\[Nombre de usuario]\\Documentos\\Zoom";
+    } else if (userAgent.indexOf("mac") !== -1) {
+      zoomPath = "/Usuarios/[Nombre de usuario]/Documentos/Zoom";
+    } else if (userAgent.indexOf("linux") !== -1) {
+      zoomPath = "/home/[Nombre de usuario]/Documentos/Zoom";
+    }
 
+    toast({
+      title: "Ubicación de grabaciones de Zoom",
+      description: `Las grabaciones se encuentran en: ${zoomPath}`,
+      duration: 5000,
+    });
+
+    // Navegar a la pestaña de archivos con la semana especificada
+    navigate(`?tab=files&week=${weekNumber}`);
+  };
 
   const handleDeleteMeeting = async (meetingId: string) => {
     try {
@@ -162,7 +189,7 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start_time">Fecha y Hora *</Label>
                 <Input
@@ -188,6 +215,25 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
                     setFormData({ ...formData, duration: parseInt(e.target.value) })
                   }
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="week_number">Semana</Label>
+                <Select 
+                  value={formData.week_number.toString()} 
+                  onValueChange={(value) => setFormData({ ...formData, week_number: parseInt(value) })}
+                >
+                  <SelectTrigger id="week_number">
+                    <SelectValue placeholder="Seleccionar semana" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 16 }, (_, i) => i + 1).map((week) => (
+                      <SelectItem key={week} value={week.toString()}>
+                        Semana {week}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -232,6 +278,9 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
                           <Clock className="h-3 w-3" />
                           {format(new Date(meeting.start_time), "HH:mm")} ({meeting.duration} min)
                         </div>
+                        <div className="flex items-center gap-1 font-medium text-primary">
+                          Semana {meeting.week_number}
+                        </div>
                         {meeting.password && (
                           <div className="flex items-center gap-1">
                             <span>Contraseña: </span>
@@ -240,7 +289,7 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
                         )}
                       </div>
 
-                      <div className="flex gap-2 pt-1">
+                      <div className="flex gap-2 pt-1 flex-wrap">
                         <Button
                           size="sm"
                           onClick={() => window.open(meeting.join_url, "_blank")}
@@ -262,6 +311,15 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
                           className="h-8 text-xs"
                         >
                           Copiar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleUploadRecording(meeting.week_number)}
+                          className="flex items-center gap-1 h-8 text-xs"
+                        >
+                          <UploadIcon className="h-3 w-3" />
+                          Subir Grabación
                         </Button>
                       </div>
                     </div>

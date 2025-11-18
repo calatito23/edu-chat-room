@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,16 +30,25 @@ import CourseZoom from "@/components/CourseZoom";
 const CourseView = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [course, setCourse] = useState<any>(null);
   const [userRole, setUserRole] = useState<"student" | "teacher" | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [enrollCode, setEnrollCode] = useState("");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "stream");
 
   useEffect(() => {
     loadCourseData();
   }, [courseId]);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const loadCourseData = async () => {
     try {
@@ -208,7 +217,7 @@ const CourseView = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="stream" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-6 max-w-4xl">
             <TabsTrigger value="stream">
               <FileText className="h-4 w-4 mr-2" />
@@ -245,7 +254,12 @@ const CourseView = () => {
           </TabsContent>
 
           <TabsContent value="files" className="mt-6">
-            <CourseFiles courseId={courseId!} userRole={userRole!} teacherId={course?.teacher_id} />
+            <CourseFiles 
+              courseId={courseId!} 
+              userRole={userRole!} 
+              teacherId={course?.teacher_id}
+              initialWeek={searchParams.get("week") ? parseInt(searchParams.get("week")!) : undefined}
+            />
           </TabsContent>
 
           <TabsContent value="evaluations" className="mt-6">
