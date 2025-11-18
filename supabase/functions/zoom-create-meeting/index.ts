@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { topic, start_time, duration, course_id } = await req.json();
+    const { topic, start_time, duration, course_id, week_number } = await req.json();
 
     if (!topic || !start_time || !duration || !course_id) {
       throw new Error('Missing required fields');
@@ -128,6 +128,7 @@ serve(async (req) => {
         join_url: meetingData.join_url,
         password: meetingData.password,
         created_by: user.id,
+        week_number: week_number || 1,
       })
       .select()
       .single();

@@ -443,6 +443,7 @@ export type Database = {
           start_time: string
           topic: string
           updated_at: string
+          week_number: number
         }
         Insert: {
           course_id: string
@@ -456,6 +457,7 @@ export type Database = {
           start_time: string
           topic: string
           updated_at?: string
+          week_number?: number
         }
         Update: {
           course_id?: string
@@ -469,6 +471,7 @@ export type Database = {
           start_time?: string
           topic?: string
           updated_at?: string
+          week_number?: number
         }
         Relationships: [
           {

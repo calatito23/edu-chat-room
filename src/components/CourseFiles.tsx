@@ -35,18 +35,33 @@ interface CourseFilesProps {
   courseId: string;
   userRole: "student" | "teacher";
   teacherId: string;
+  initialWeek?: number;
 }
 
-const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
+const CourseFiles = ({ courseId, userRole, teacherId, initialWeek }: CourseFilesProps) => {
   const { toast } = useToast();
   const [files, setFiles] = useState<any[]>([]);
   const [uploading, setUploading] = useState<number | null>(null); // Ahora guarda el número de semana
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [expandedWeek, setExpandedWeek] = useState<string>(initialWeek ? `week-${initialWeek}` : "");
 
   useEffect(() => {
     getCurrentUser();
     loadFiles();
   }, [courseId]);
+
+  useEffect(() => {
+    if (initialWeek) {
+      setExpandedWeek(`week-${initialWeek}`);
+      // Scroll to the week section after a short delay
+      setTimeout(() => {
+        const element = document.getElementById(`week-${initialWeek}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [initialWeek]);
 
   const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -240,11 +255,11 @@ const CourseFiles = ({ courseId, userRole, teacherId }: CourseFilesProps) => {
           <CardTitle>Material por Semanas</CardTitle>
         </CardHeader>
         <CardContent>
-          <Accordion type="multiple" className="w-full">
+          <Accordion type="single" collapsible className="w-full" value={expandedWeek} onValueChange={setExpandedWeek}>
             {Array.from({ length: 16 }, (_, i) => i + 1).map((weekNumber) => {
               const weekFiles = filesByWeek[weekNumber] || [];
               return (
-                <AccordionItem key={weekNumber} value={`week-${weekNumber}`}>
+                <AccordionItem key={weekNumber} value={`week-${weekNumber}`} id={`week-${weekNumber}`}>
                   <AccordionTrigger>
                     <div className="flex items-center justify-between w-full pr-4">
                       <span className="font-semibold">Semana {weekNumber}</span>
