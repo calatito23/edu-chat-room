@@ -11,6 +11,7 @@ import { format } from "date-fns";
 
 interface CourseZoomProps {
   courseId: string;
+  userRole: "teacher" | "student";
 }
 
 interface ZoomMeeting {
@@ -25,7 +26,7 @@ interface ZoomMeeting {
 }
 
 
-const CourseZoom = ({ courseId }: CourseZoomProps) => {
+const CourseZoom = ({ courseId, userRole }: CourseZoomProps) => {
   const { toast } = useToast();
   const [meetings, setMeetings] = useState<ZoomMeeting[]>([]);
   const [loading, setLoading] = useState(false);
@@ -195,83 +196,85 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Create Meeting Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Video className="h-5 w-5" />
-            Crear Nueva Reunión
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleCreateMeeting} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="topic">Tema de la Reunión *</Label>
-              <Input
-                id="topic"
-                value={formData.topic}
-                onChange={(e) =>
-                  setFormData({ ...formData, topic: e.target.value })
-                }
-                placeholder="Ej: Clase de Plataformas Digitales"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
+      {/* Create Meeting Form - Only for teachers */}
+      {userRole === "teacher" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Video className="h-5 w-5" />
+              Crear Nueva Reunión
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateMeeting} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="start_time">Fecha y Hora *</Label>
+                <Label htmlFor="topic">Tema de la Reunión *</Label>
                 <Input
-                  id="start_time"
-                  type="datetime-local"
-                  value={formData.start_time}
+                  id="topic"
+                  value={formData.topic}
                   onChange={(e) =>
-                    setFormData({ ...formData, start_time: e.target.value })
+                    setFormData({ ...formData, topic: e.target.value })
                   }
+                  placeholder="Ej: Clase de Plataformas Digitales"
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duración (minutos)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  min="15"
-                  max="240"
-                  value={formData.duration}
-                  onChange={(e) =>
-                    setFormData({ ...formData, duration: parseInt(e.target.value) })
-                  }
-                />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start_time">Fecha y Hora *</Label>
+                  <Input
+                    id="start_time"
+                    type="datetime-local"
+                    value={formData.start_time}
+                    onChange={(e) =>
+                      setFormData({ ...formData, start_time: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Duración (minutos)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    min="15"
+                    max="240"
+                    value={formData.duration}
+                    onChange={(e) =>
+                      setFormData({ ...formData, duration: parseInt(e.target.value) })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="week_number">Semana</Label>
+                  <Select 
+                    value={formData.week_number.toString()} 
+                    onValueChange={(value) => setFormData({ ...formData, week_number: parseInt(value) })}
+                  >
+                    <SelectTrigger id="week_number">
+                      <SelectValue placeholder="Seleccionar semana" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 16 }, (_, i) => i + 1).map((week) => (
+                        <SelectItem key={week} value={week.toString()}>
+                          Semana {week}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="week_number">Semana</Label>
-                <Select 
-                  value={formData.week_number.toString()} 
-                  onValueChange={(value) => setFormData({ ...formData, week_number: parseInt(value) })}
-                >
-                  <SelectTrigger id="week_number">
-                    <SelectValue placeholder="Seleccionar semana" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 16 }, (_, i) => i + 1).map((week) => (
-                      <SelectItem key={week} value={week.toString()}>
-                        Semana {week}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Button type="submit" disabled={creating} className="w-full">
-              {creating ? "Creando..." : "Crear Reunión"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button type="submit" disabled={creating} className="w-full">
+                {creating ? "Creando..." : "Crear Reunión"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Meetings List */}
       <Card>
@@ -341,43 +344,49 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
                         >
                           Copiar
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => document.getElementById(`recording-input-${meeting.id}`)?.click()}
-                          disabled={uploadingRecording === meeting.id}
-                          className="flex items-center gap-1 h-8 text-xs"
-                        >
-                          {uploadingRecording === meeting.id ? (
-                            <>
-                              <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              Subiendo...
-                            </>
-                          ) : (
-                            <>
-                              <UploadIcon className="h-3 w-3" />
-                              Subir Grabación
-                            </>
-                          )}
-                        </Button>
-                        <input
-                          id={`recording-input-${meeting.id}`}
-                          type="file"
-                          accept="video/*,audio/*"
-                          className="hidden"
-                          onChange={(e) => handleUploadRecording(e, meeting.id, meeting.week_number, meeting.topic)}
-                        />
+                        {userRole === "teacher" && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => document.getElementById(`recording-input-${meeting.id}`)?.click()}
+                              disabled={uploadingRecording === meeting.id}
+                              className="flex items-center gap-1 h-8 text-xs"
+                            >
+                              {uploadingRecording === meeting.id ? (
+                                <>
+                                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                  Subiendo...
+                                </>
+                              ) : (
+                                <>
+                                  <UploadIcon className="h-3 w-3" />
+                                  Subir Grabación
+                                </>
+                              )}
+                            </Button>
+                            <input
+                              id={`recording-input-${meeting.id}`}
+                              type="file"
+                              accept="video/*,audio/*"
+                              className="hidden"
+                              onChange={(e) => handleUploadRecording(e, meeting.id, meeting.week_number, meeting.topic)}
+                            />
+                          </>
+                        )}
                       </div>
                     </div>
 
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleDeleteMeeting(meeting.id)}
-                      className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {userRole === "teacher" && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleDeleteMeeting(meeting.id)}
+                        className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
