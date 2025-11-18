@@ -284,6 +284,7 @@ export type Database = {
           file_path: string
           file_size: number
           id: string
+          is_recording: boolean
           mime_type: string
           uploader_id: string
           week_number: number
@@ -295,6 +296,7 @@ export type Database = {
           file_path: string
           file_size: number
           id?: string
+          is_recording?: boolean
           mime_type: string
           uploader_id: string
           week_number?: number
@@ -306,6 +308,7 @@ export type Database = {
           file_path?: string
           file_size?: number
           id?: string
+          is_recording?: boolean
           mime_type?: string
           uploader_id?: string
           week_number?: number
