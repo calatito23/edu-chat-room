@@ -480,6 +480,68 @@ export type Database = {
           },
         ]
       }
+      zoom_recordings: {
+        Row: {
+          course_id: string
+          created_at: string
+          download_url: string | null
+          duration: number
+          file_size: number | null
+          file_type: string | null
+          id: string
+          meeting_id: string
+          recording_count: number
+          recording_id: string
+          recording_play_url: string | null
+          share_url: string | null
+          start_time: string
+          topic: string
+          updated_at: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          download_url?: string | null
+          duration: number
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          meeting_id: string
+          recording_count?: number
+          recording_id: string
+          recording_play_url?: string | null
+          share_url?: string | null
+          start_time: string
+          topic: string
+          updated_at?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          download_url?: string | null
+          duration?: number
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          meeting_id?: string
+          recording_count?: number
+          recording_id?: string
+          recording_play_url?: string | null
+          share_url?: string | null
+          start_time?: string
+          topic?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_course"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
