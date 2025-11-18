@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,6 +63,8 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     correct_answer: "",
     points: 1,
   });
+  const [showPointsAlert, setShowPointsAlert] = useState(false);
+  const [pendingSave, setPendingSave] = useState<"create" | "update" | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -152,7 +155,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
-  const handleCreateEvaluation = async () => {
+  const validateAndProceed = (action: "create" | "update") => {
     if (!newEval.title || !newEval.start_date || !newEval.end_date) {
       toast({
         variant: "destructive",
@@ -171,6 +174,51 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       return;
     }
 
+    // Validar que la suma de puntos sea 20
+    const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+    if (totalPoints !== 20) {
+      setPendingSave(action);
+      setShowPointsAlert(true);
+      return;
+    }
+
+    // Si suma 20, proceder directamente
+    if (action === "create") {
+      executeCreateEvaluation();
+    } else {
+      executeUpdateEvaluation();
+    }
+  };
+
+  const handleRedistributePoints = () => {
+    // Redistribuir puntos equitativamente
+    const pointsPerQuestion = 20 / questions.length;
+    const redistributedQuestions = questions.map(q => ({
+      ...q,
+      points: Math.round(pointsPerQuestion * 100) / 100, // Redondear a 2 decimales
+    }));
+    
+    // Ajustar el último para que sume exactamente 20
+    const currentSum = redistributedQuestions.slice(0, -1).reduce((sum, q) => sum + q.points, 0);
+    redistributedQuestions[redistributedQuestions.length - 1].points = Math.round((20 - currentSum) * 100) / 100;
+    
+    setQuestions(redistributedQuestions);
+    setShowPointsAlert(false);
+    
+    // Proceder con el guardado
+    if (pendingSave === "create") {
+      executeCreateEvaluation();
+    } else if (pendingSave === "update") {
+      executeUpdateEvaluation();
+    }
+    setPendingSave(null);
+  };
+
+  const handleCreateEvaluation = () => {
+    validateAndProceed("create");
+  };
+
+  const executeCreateEvaluation = async () => {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("No autenticado");
@@ -228,15 +276,20 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     }
   };
 
-  const handleUpdateEvaluation = async () => {
-    if (!editingEvaluation || !newEval.title || !newEval.start_date || !newEval.end_date) {
+  const handleUpdateEvaluation = () => {
+    if (!editingEvaluation) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Completa todos los campos requeridos",
+        description: "No hay evaluación seleccionada para editar",
       });
       return;
     }
+    validateAndProceed("update");
+  };
+
+  const executeUpdateEvaluation = async () => {
+    if (!editingEvaluation) return;
 
     try {
       // Convertir datetime-local a ISO string preservando la hora local
@@ -880,6 +933,29 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog para validar suma de puntos */}
+      <AlertDialog open={showPointsAlert} onOpenChange={setShowPointsAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Puntaje Total Incorrecto</AlertDialogTitle>
+            <AlertDialogDescription>
+              La suma de los puntos de todas las preguntas debe ser exactamente 20. 
+              Actualmente suma {questions.reduce((sum, q) => sum + q.points, 0)} puntos.
+              <br /><br />
+              ¿Deseas que se asigne automáticamente el mismo puntaje a todas las preguntas para que sumen 20?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingSave(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleRedistributePoints}>
+              Redistribuir Puntos
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
