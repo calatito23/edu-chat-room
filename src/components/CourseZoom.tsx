@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Video, Calendar, Clock, ExternalLink, Trash2, Download } from "lucide-react";
+import { Video, Calendar, Clock, ExternalLink, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface CourseZoomProps {
@@ -22,24 +22,11 @@ interface ZoomMeeting {
   password?: string;
 }
 
-interface ZoomRecording {
-  id: string;
-  meeting_id: string;
-  topic: string;
-  start_time: string;
-  duration: number;
-  recording_play_url?: string;
-  download_url?: string;
-  file_type?: string;
-  file_size?: number;
-}
 
 const CourseZoom = ({ courseId }: CourseZoomProps) => {
   const { toast } = useToast();
   const [meetings, setMeetings] = useState<ZoomMeeting[]>([]);
-  const [recordings, setRecordings] = useState<ZoomRecording[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingRecordings, setLoadingRecordings] = useState(false);
   const [creating, setCreating] = useState(false);
   const [formData, setFormData] = useState({
     topic: "",
@@ -49,7 +36,6 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
 
   useEffect(() => {
     loadMeetings();
-    loadRecordings();
   }, [courseId]);
 
   const loadMeetings = async () => {
@@ -123,23 +109,6 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
     }
   };
 
-  const loadRecordings = async () => {
-    try {
-      setLoadingRecordings(true);
-      const { data, error } = await supabase
-        .from("zoom_recordings")
-        .select("*")
-        .eq("course_id", courseId)
-        .order("start_time", { ascending: false });
-
-      if (error) throw error;
-      setRecordings(data || []);
-    } catch (error: any) {
-      console.error("Error loading recordings:", error);
-    } finally {
-      setLoadingRecordings(false);
-    }
-  };
 
 
   const handleDeleteMeeting = async (meetingId: string) => {
@@ -167,11 +136,6 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
     }
   };
 
-  const formatFileSize = (bytes?: number) => {
-    if (!bytes) return "N/A";
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(2)} MB`;
-  };
 
   return (
     <div className="space-y-6">
@@ -249,42 +213,41 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
               No hay reuniones programadas
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2">
               {meetings.map((meeting) => (
                 <div
                   key={meeting.id}
-                  className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
+                  className="border rounded-lg p-3 hover:bg-accent/50 transition-colors"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2 flex-1">
-                      <h3 className="font-semibold text-lg">{meeting.topic}</h3>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <h3 className="font-semibold text-base truncate">{meeting.topic}</h3>
                       
-                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
+                          <Calendar className="h-3 w-3" />
                           {format(new Date(meeting.start_time), "dd/MM/yyyy")}
                         </div>
                         <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
+                          <Clock className="h-3 w-3" />
                           {format(new Date(meeting.start_time), "HH:mm")} ({meeting.duration} min)
                         </div>
+                        {meeting.password && (
+                          <div className="flex items-center gap-1">
+                            <span>Contraseña: </span>
+                            <span className="font-mono">{meeting.password}</span>
+                          </div>
+                        )}
                       </div>
 
-                      {meeting.password && (
-                        <div className="text-sm">
-                          <span className="text-muted-foreground">Contraseña: </span>
-                          <span className="font-mono">{meeting.password}</span>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 pt-1">
                         <Button
                           size="sm"
                           onClick={() => window.open(meeting.join_url, "_blank")}
-                          className="flex items-center gap-1"
+                          className="flex items-center gap-1 h-8 text-xs"
                         >
-                          <ExternalLink className="h-4 w-4" />
-                          Unirse a la Reunión
+                          <ExternalLink className="h-3 w-3" />
+                          Unirse
                         </Button>
                         <Button
                           size="sm"
@@ -296,8 +259,9 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
                               description: "El enlace ha sido copiado al portapapeles",
                             });
                           }}
+                          className="h-8 text-xs"
                         >
-                          Copiar Enlace
+                          Copiar
                         </Button>
                       </div>
                     </div>
@@ -306,9 +270,9 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
                       size="icon"
                       variant="ghost"
                       onClick={() => handleDeleteMeeting(meeting.id)}
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive h-8 w-8 shrink-0"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
@@ -318,83 +282,6 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
         </CardContent>
       </Card>
 
-      {/* Recordings List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Video className="h-5 w-5" />
-            Grabaciones Disponibles
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingRecordings ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Cargando grabaciones...
-            </div>
-          ) : recordings.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No hay grabaciones disponibles</p>
-              <p className="text-sm mt-2">
-                Las grabaciones se sincronizan automáticamente después de que termina la reunión
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {recordings.map((recording) => (
-                <div
-                  key={recording.id}
-                  className="border rounded-lg p-4 hover:bg-accent/50 transition-colors"
-                >
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg">{recording.topic}</h3>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {format(new Date(recording.start_time), "dd/MM/yyyy")}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {format(new Date(recording.start_time), "HH:mm")} ({recording.duration} min)
-                      </div>
-                      {recording.file_type && (
-                        <div className="flex items-center gap-1">
-                          <Video className="h-4 w-4" />
-                          {recording.file_type} ({formatFileSize(recording.file_size)})
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2 mt-3">
-                      {recording.recording_play_url && (
-                        <Button
-                          size="sm"
-                          onClick={() => window.open(recording.recording_play_url, "_blank")}
-                          className="flex items-center gap-1"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          Ver Grabación
-                        </Button>
-                      )}
-                      {recording.download_url && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(recording.download_url, "_blank")}
-                          className="flex items-center gap-1"
-                        >
-                          <Download className="h-4 w-4" />
-                          Descargar
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };
