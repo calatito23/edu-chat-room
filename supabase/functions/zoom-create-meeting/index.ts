@@ -110,8 +110,14 @@ serve(async (req) => {
 
     console.log('User authenticated successfully:', user.id);
 
-    // Save to database
-    const { data: savedMeeting, error: dbError } = await supabaseClient
+    // Save to database using SERVICE_ROLE_KEY to bypass RLS
+    // (we already verified the user has permission above)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: savedMeeting, error: dbError } = await supabaseAdmin
       .from('zoom_meetings')
       .insert({
         course_id,
