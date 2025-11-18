@@ -79,24 +79,36 @@ serve(async (req) => {
 
     const meetingData = await meetingResponse.json();
 
-    // Get user from JWT token
+    // Get user from JWT token - corrected according to Supabase docs
+    console.log('Getting authorization header...');
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.error('No authorization header found');
       throw new Error('No authorization header');
     }
 
+    console.log('Extracting token...');
+    const token = authHeader.replace('Bearer ', '');
+    
+    console.log('Creating Supabase client...');
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     );
 
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    console.log('Calling getUser with token...');
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    console.log('User data:', user ? `User ID: ${user.id}` : 'No user');
+    console.log('User error:', userError);
 
     if (userError || !user) {
       console.error('Auth error:', userError);
       throw new Error('User not authenticated');
     }
+
+    console.log('User authenticated successfully:', user.id);
 
     // Save to database
     const { data: savedMeeting, error: dbError } = await supabaseClient
