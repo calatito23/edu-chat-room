@@ -31,6 +31,7 @@ interface Question {
   options?: string[];
   correct_answer: any;
   points: number;
+  images?: string[];
 }
 
 interface CourseEvaluationsProps {
@@ -62,6 +63,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     options: [],
     correct_answer: "",
     points: 1,
+    images: [],
   });
   const [optionInputs, setOptionInputs] = useState<string[]>(["", "", "", ""]);
   const [showPointsAlert, setShowPointsAlert] = useState(false);
@@ -149,8 +151,81 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       options: [],
       correct_answer: "",
       points: 1,
+      images: [],
     });
     setOptionInputs(["", "", "", ""]);
+  };
+
+  const handlePasteImage = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData.items;
+    const imageItems: File[] = [];
+    
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) imageItems.push(file);
+      }
+    }
+    
+    if (imageItems.length > 0) {
+      e.preventDefault();
+      const newImages = await Promise.all(
+        imageItems.map(file => {
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+      
+      setCurrentQuestion({
+        ...currentQuestion,
+        images: [...(currentQuestion.images || []), ...newImages]
+      });
+      
+      toast({
+        title: "Imagen(es) agregada(s)",
+        description: `Se ${imageItems.length === 1 ? 'agregó 1 imagen' : `agregaron ${imageItems.length} imágenes`}`,
+      });
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+    
+    Promise.all(
+      imageFiles.map(file => {
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(file);
+        });
+      })
+    ).then(newImages => {
+      setCurrentQuestion({
+        ...currentQuestion,
+        images: [...(currentQuestion.images || []), ...newImages]
+      });
+      
+      toast({
+        title: "Imagen(es) agregada(s)",
+        description: `Se ${imageFiles.length === 1 ? 'agregó 1 imagen' : `agregaron ${imageFiles.length} imágenes`}`,
+      });
+    });
+    
+    // Reset input
+    e.target.value = '';
+  };
+
+  const removeImage = (index: number) => {
+    setCurrentQuestion({
+      ...currentQuestion,
+      images: currentQuestion.images?.filter((_, i) => i !== index) || []
+    });
   };
 
   const removeQuestion = (index: number) => {
@@ -614,14 +689,23 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
 
               {!editingEvaluation && (
                 <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-4">Preguntas ({questions.length})</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold">Preguntas Agregadas</h3>
+                    <div className="flex items-center gap-2 bg-primary/10 px-4 py-2 rounded-lg border-2 border-primary/20 shadow-sm">
+                      <span className="text-2xl font-bold text-primary">{questions.length}</span>
+                      <span className="text-sm text-muted-foreground">pregunta{questions.length !== 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
                 {questions.map((q, index) => (
-                  <Card key={index} className="mb-2">
+                  <Card key={index} className="mb-2 border-l-4 border-l-primary/50">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <p className="font-medium">{q.question_text}</p>
                           <p className="text-sm text-muted-foreground">Tipo: {q.question_type} - Puntos: {q.points}</p>
+                          {q.images && q.images.length > 0 && (
+                            <p className="text-xs text-primary mt-1">📎 {q.images.length} imagen{q.images.length !== 1 ? 'es' : ''} adjunta{q.images.length !== 1 ? 's' : ''}</p>
+                          )}
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => removeQuestion(index)}>
                           <Trash2 className="h-4 w-4" />
@@ -631,18 +715,64 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                   </Card>
                 ))}
 
-                <Card className="mt-4 bg-muted/50">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Agregar Pregunta</CardTitle>
+                <Card className="mt-4 bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20 shadow-md">
+                  <CardHeader className="bg-primary/5">
+                    <CardTitle className="text-lg text-primary flex items-center gap-2">
+                      <Plus className="h-5 w-5" />
+                      Agregar Nueva Pregunta
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label>Pregunta</Label>
+                      <Label className="flex items-center justify-between">
+                        <span>Pregunta</span>
+                        <span className="text-xs text-muted-foreground">Puedes pegar imágenes con Ctrl+V</span>
+                      </Label>
                       <Textarea
                         value={currentQuestion.question_text}
                         onChange={(e) => setCurrentQuestion({ ...currentQuestion, question_text: e.target.value })}
-                        placeholder="Escribe tu pregunta aquí"
+                        onPaste={handlePasteImage}
+                        placeholder="Escribe tu pregunta aquí (puedes pegar imágenes)"
+                        className="min-h-[100px]"
                       />
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          type="file"
+                          id="image-upload"
+                          accept="image/*"
+                          multiple
+                          onChange={handleFileUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.getElementById('image-upload')?.click()}
+                          className="gap-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Subir Imagen
+                        </Button>
+                      </div>
+                      {currentQuestion.images && currentQuestion.images.length > 0 && (
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          {currentQuestion.images.map((img, idx) => (
+                            <div key={idx} className="relative group">
+                              <img src={img} alt={`Imagen ${idx + 1}`} className="w-full h-32 object-cover rounded border" />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => removeImage(idx)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -759,8 +889,11 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                       )}
                     </div>
 
-                    <Button onClick={addQuestion} variant="outline">
-                      <Plus className="mr-2 h-4 w-4" />
+                    <Button 
+                      onClick={addQuestion} 
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"
+                    >
+                      <Plus className="mr-2 h-5 w-5" />
                       Agregar Pregunta
                     </Button>
                   </CardContent>
@@ -768,7 +901,10 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                 </div>
               )}
 
-              <Button onClick={editingEvaluation ? handleUpdateEvaluation : handleCreateEvaluation} className="w-full">
+              <Button 
+                onClick={editingEvaluation ? handleUpdateEvaluation : handleCreateEvaluation} 
+                className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground shadow-md"
+              >
                 {editingEvaluation ? "Actualizar Evaluación" : "Crear Evaluación"}
               </Button>
             </div>
