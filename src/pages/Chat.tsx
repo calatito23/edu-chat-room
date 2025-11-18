@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
  */
 const Chat = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [users, setUsers] = useState<any[]>([]);
@@ -39,6 +40,17 @@ const Chat = () => {
   useEffect(() => {
     checkUser();
   }, []);
+
+  // Auto-select user from URL parameter
+  useEffect(() => {
+    const userId = searchParams.get('user');
+    if (userId && users.length > 0 && !selectedUser) {
+      const userToSelect = users.find(u => u.id === userId);
+      if (userToSelect) {
+        setSelectedUser(userToSelect);
+      }
+    }
+  }, [searchParams, users, selectedUser]);
 
   useEffect(() => {
     if (selectedUser) {
