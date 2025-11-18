@@ -142,9 +142,9 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
 
     evaluations.forEach((evaluation) => {
       const grade = getGrade(studentId, evaluation.id);
-      if (grade && grade.score !== null && grade.total_points !== null && grade.total_points > 0) {
-        const normalizedScore = (grade.score / grade.total_points) * 20; // Normalize to 0-20 scale
-        totalWeightedScore += normalizedScore * (weights[evaluation.id] || 0);
+      if (grade && grade.score !== null) {
+        // Promedio final = suma de (score * peso)
+        totalWeightedScore += grade.score * (weights[evaluation.id] || 0);
         totalWeightUsed += weights[evaluation.id] || 0;
       }
     });
@@ -210,51 +210,58 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle>Registro de Notas</CardTitle>
+            <CardTitle>
+              {userRole === "teacher" ? "Registro de Notas" : "Mis Notas"}
+            </CardTitle>
             <CardDescription>
-              Notas de todos los estudiantes en las evaluaciones del curso
+              {userRole === "teacher" 
+                ? "Notas de todos los estudiantes en las evaluaciones del curso"
+                : "Tus calificaciones y promedio final del curso"
+              }
             </CardDescription>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Editar Pesos de Evaluaciones
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Configurar Pesos de Evaluaciones</DialogTitle>
-                <DialogDescription>
-                  Asigna un peso a cada evaluación (0-1). La suma debe ser igual a 1.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                {evaluations.map((evaluation) => (
-                  <div key={evaluation.id} className="flex items-center gap-4">
-                    <Label className="flex-1 text-sm">{evaluation.title}</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={tempWeights[evaluation.id] || 0}
-                      onChange={(e) => handleWeightChange(evaluation.id, e.target.value)}
-                      className="w-24"
-                    />
+          {userRole === "teacher" && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Editar Pesos de Evaluaciones
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Configurar Pesos de Evaluaciones</DialogTitle>
+                  <DialogDescription>
+                    Asigna un peso a cada evaluación (0-1). La suma debe ser igual a 1.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  {evaluations.map((evaluation) => (
+                    <div key={evaluation.id} className="flex items-center gap-4">
+                      <Label className="flex-1 text-sm">{evaluation.title}</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={tempWeights[evaluation.id] || 0}
+                        onChange={(e) => handleWeightChange(evaluation.id, e.target.value)}
+                        className="w-24"
+                      />
+                    </div>
+                  ))}
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Suma actual: {Object.values(tempWeights).reduce((acc, val) => acc + val, 0).toFixed(2)}
+                    </p>
                   </div>
-                ))}
-                <div className="pt-2 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    Suma actual: {Object.values(tempWeights).reduce((acc, val) => acc + val, 0).toFixed(2)}
-                  </p>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleSaveWeights}>Guardar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button onClick={handleSaveWeights}>Guardar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </CardHeader>
       <CardContent>
