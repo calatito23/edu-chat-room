@@ -169,25 +169,15 @@ const Chat = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver al Dashboard
-          </Button>
-        </div>
-      </header>
-
-      <div className="container mx-auto p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-10rem)]">
+    <div className="container mx-auto p-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-12rem)]">
           {/* Users List */}
           <Card className="md:col-span-1">
             <CardHeader>
@@ -277,10 +267,9 @@ const Chat = () => {
             ) : (
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 Selecciona un usuario para comenzar a chatear
-              </div>
-            )}
-          </Card>
-        </div>
+            </div>
+          )}
+        </Card>
       </div>
     </div>
   );

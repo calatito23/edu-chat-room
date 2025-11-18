@@ -4,9 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, LogOut, MessageSquare, BookOpen, Plus, Users } from "lucide-react";
+import { BookOpen, Plus, Users } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
-import { Notifications } from "@/components/Notifications";
 
 /**
  * Dashboard principal del aula virtual
@@ -165,7 +164,7 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="text-muted-foreground">Cargando...</p>
@@ -175,59 +174,23 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-      {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10 shadow-[var(--shadow-soft)]">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-secondary">
-                <GraduationCap className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">Aula Virtual</h1>
-                <p className="text-sm text-muted-foreground">
-                  {profile?.full_name} - {userRole === "teacher" ? "Profesor" : "Alumno"}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/chat")}
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Chat
-              </Button>
-              <Notifications />
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Salir
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">
-            {userRole === "teacher" ? "Mis Cursos" : "Cursos Inscritos"}
-          </h2>
-          {userRole === "teacher" ? (
-            <Button onClick={() => navigate("/courses/create")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Curso
-            </Button>
-          ) : (
-            <Button onClick={() => navigate("/courses/join")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Unirse a Curso
-            </Button>
-          )}
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold">
+          {userRole === "teacher" ? "Mis Cursos" : "Cursos Inscritos"}
+        </h2>
+        {userRole === "teacher" ? (
+          <Button onClick={() => navigate("/courses/create")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Crear Curso
+          </Button>
+        ) : (
+          <Button onClick={() => navigate("/courses/join")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Unirse a Curso
+          </Button>
+        )}
+      </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {courses.length === 0 ? (
@@ -264,26 +227,25 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                    {course.description || "Sin descripción"}
-                  </p>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {userRole === "teacher" ? "Profesor:" : "Impartido por:"}{" "}
-                      {course.profiles?.full_name}
+                  {course.description || "Sin descripción"}
+                </p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {userRole === "teacher" ? "Profesor:" : "Impartido por:"}{" "}
+                    {course.profiles?.full_name}
+                  </span>
+                  {userRole === "teacher" && (
+                    <span className="flex items-center gap-1 text-primary">
+                      <Users className="h-4 w-4" />
+                      {course.enrollmentCount}
                     </span>
-                    {userRole === "teacher" && (
-                      <span className="flex items-center gap-1 text-primary">
-                        <Users className="h-4 w-4" />
-                        {course.enrollmentCount}
-                      </span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
-      </main>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 };
