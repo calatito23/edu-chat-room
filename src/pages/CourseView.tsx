@@ -271,7 +271,7 @@ const CourseView = () => {
           </TabsContent>
 
           <TabsContent value="zoom" className="mt-6">
-            <CourseZoom courseId={courseId!} />
+            <CourseZoom courseId={courseId!} userRole={userRole!} />
           </TabsContent>
         </Tabs>
       </main>
