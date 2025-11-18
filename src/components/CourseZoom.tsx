@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Video, Calendar, Clock, ExternalLink, Trash2, Upload as UploadIcon } from "lucide-react";
 import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
 
 interface CourseZoomProps {
   courseId: string;
@@ -28,10 +27,10 @@ interface ZoomMeeting {
 
 const CourseZoom = ({ courseId }: CourseZoomProps) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [meetings, setMeetings] = useState<ZoomMeeting[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [uploadingRecording, setUploadingRecording] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     topic: "",
     start_time: "",
@@ -115,27 +114,57 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
     }
   };
 
-  const handleUploadRecording = (weekNumber: number) => {
-    // Detectar el sistema operativo
-    const userAgent = navigator.userAgent.toLowerCase();
-    let zoomPath = "";
-    
-    if (userAgent.indexOf("win") !== -1) {
-      zoomPath = "C:\\Usuarios\\[Nombre de usuario]\\Documentos\\Zoom";
-    } else if (userAgent.indexOf("mac") !== -1) {
-      zoomPath = "/Usuarios/[Nombre de usuario]/Documentos/Zoom";
-    } else if (userAgent.indexOf("linux") !== -1) {
-      zoomPath = "/home/[Nombre de usuario]/Documentos/Zoom";
+  const handleUploadRecording = async (e: React.ChangeEvent<HTMLInputElement>, meetingId: string, weekNumber: number, meetingTopic: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingRecording(meetingId);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
+
+      // Upload to storage
+      const filePath = `${courseId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("course-files")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Save metadata to database marking it as a recording
+      const { error: dbError } = await supabase
+        .from("files")
+        .insert({
+          course_id: courseId,
+          uploader_id: user.id,
+          file_name: `Grabación: ${meetingTopic}`,
+          file_path: filePath,
+          file_size: file.size,
+          mime_type: file.type,
+          week_number: weekNumber,
+          is_recording: true,
+        });
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Grabación subida",
+        description: "La grabación se ha guardado exitosamente",
+      });
+
+      // Reset the input
+      e.target.value = '';
+    } catch (error: any) {
+      console.error("Error uploading recording:", error);
+      toast({
+        title: "Error al subir grabación",
+        description: error.message || "Intenta nuevamente",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingRecording(null);
     }
-
-    toast({
-      title: "Ubicación de grabaciones de Zoom",
-      description: `Las grabaciones se encuentran en: ${zoomPath}`,
-      duration: 5000,
-    });
-
-    // Navegar a la pestaña de archivos con la semana especificada
-    navigate(`?tab=files&week=${weekNumber}`);
   };
 
   const handleDeleteMeeting = async (meetingId: string) => {
@@ -315,12 +344,29 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => handleUploadRecording(meeting.week_number)}
+                          onClick={() => document.getElementById(`recording-input-${meeting.id}`)?.click()}
+                          disabled={uploadingRecording === meeting.id}
                           className="flex items-center gap-1 h-8 text-xs"
                         >
-                          <UploadIcon className="h-3 w-3" />
-                          Subir Grabación
+                          {uploadingRecording === meeting.id ? (
+                            <>
+                              <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              Subiendo...
+                            </>
+                          ) : (
+                            <>
+                              <UploadIcon className="h-3 w-3" />
+                              Subir Grabación
+                            </>
+                          )}
                         </Button>
+                        <input
+                          id={`recording-input-${meeting.id}`}
+                          type="file"
+                          accept="video/*,audio/*"
+                          className="hidden"
+                          onChange={(e) => handleUploadRecording(e, meeting.id, meeting.week_number, meeting.topic)}
+                        />
                       </div>
                     </div>
 

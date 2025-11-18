@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Download, FileText, Trash2, Loader2 } from "lucide-react";
+import { Upload, Download, FileText, Trash2, Loader2, Video } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * Gestor de archivos del curso
@@ -310,12 +311,27 @@ const CourseFiles = ({ courseId, userRole, teacherId, initialWeek }: CourseFiles
                           {weekFiles.map((file) => (
                             <div
                               key={file.id}
-                              className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors"
+                              className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                                file.is_recording 
+                                  ? 'bg-primary/5 border-primary/20 hover:bg-primary/10' 
+                                  : 'hover:bg-accent/50'
+                              }`}
                             >
                               <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <FileText className="h-6 w-6 text-primary flex-shrink-0" />
+                                {file.is_recording ? (
+                                  <Video className="h-6 w-6 text-primary flex-shrink-0" />
+                                ) : (
+                                  <FileText className="h-6 w-6 text-primary flex-shrink-0" />
+                                )}
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-medium truncate text-sm">{file.file_name}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium truncate text-sm">{file.file_name}</p>
+                                    {file.is_recording && (
+                                      <Badge variant="secondary" className="text-xs shrink-0">
+                                        Grabación
+                                      </Badge>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-muted-foreground">
                                     {formatFileSize(file.file_size)} •{" "}
                                     {file.profiles?.full_name} •{" "}
