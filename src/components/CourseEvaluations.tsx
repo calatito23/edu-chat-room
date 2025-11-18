@@ -63,6 +63,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     correct_answer: "",
     points: 1,
   });
+  const [optionInputs, setOptionInputs] = useState<string[]>(["", "", "", ""]);
   const [showPointsAlert, setShowPointsAlert] = useState(false);
   const [pendingSave, setPendingSave] = useState<"create" | "update" | null>(null);
   const { toast } = useToast();
@@ -149,10 +150,38 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       correct_answer: "",
       points: 1,
     });
+    setOptionInputs(["", "", "", ""]);
   };
 
   const removeQuestion = (index: number) => {
     setQuestions(questions.filter((_, i) => i !== index));
+  };
+
+  const handleAddOption = () => {
+    setOptionInputs([...optionInputs, ""]);
+  };
+
+  const handleRemoveOption = (index: number) => {
+    if (optionInputs.length <= 2) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Debe haber al menos 2 opciones",
+      });
+      return;
+    }
+    const newOptions = optionInputs.filter((_, i) => i !== index);
+    setOptionInputs(newOptions);
+    const filteredOptions = newOptions.filter(o => o.trim());
+    setCurrentQuestion({ ...currentQuestion, options: filteredOptions });
+  };
+
+  const handleOptionChange = (index: number, value: string) => {
+    const newOptions = [...optionInputs];
+    newOptions[index] = value;
+    setOptionInputs(newOptions);
+    const filteredOptions = newOptions.filter(o => o.trim());
+    setCurrentQuestion({ ...currentQuestion, options: filteredOptions });
   };
 
   const validateAndProceed = (action: "create" | "update") => {
@@ -649,15 +678,38 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
 
                     {(currentQuestion.question_type === "multiple_choice" || 
                       currentQuestion.question_type === "multiple_select") && (
-                      <div>
-                        <Label>Opciones (una por línea)</Label>
-                        <Textarea
-                          placeholder="Opción 1&#10;Opción 2&#10;Opción 3"
-                          onChange={(e) => {
-                            const opts = e.target.value.split('\n').filter(o => o.trim());
-                            setCurrentQuestion({ ...currentQuestion, options: opts });
-                          }}
-                        />
+                      <div className="space-y-3">
+                        <Label>Opciones</Label>
+                        {optionInputs.map((option, index) => (
+                          <div key={index} className="flex gap-2">
+                            <div className="flex-1">
+                              <Input
+                                value={option}
+                                onChange={(e) => handleOptionChange(index, e.target.value)}
+                                placeholder={`Opción ${index + 1}`}
+                              />
+                            </div>
+                            {optionInputs.length > 2 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveOption(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleAddOption}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Agregar Opción
+                        </Button>
                       </div>
                     )}
 
