@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Video, Calendar, Clock, ExternalLink, Trash2, Download, RefreshCw } from "lucide-react";
+import { Video, Calendar, Clock, ExternalLink, Trash2, Download } from "lucide-react";
 import { format } from "date-fns";
 
 interface CourseZoomProps {
@@ -41,7 +41,6 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
   const [loading, setLoading] = useState(false);
   const [loadingRecordings, setLoadingRecordings] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [syncing, setSyncing] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     topic: "",
     start_time: "",
@@ -142,36 +141,6 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
     }
   };
 
-  const handleSyncRecordings = async (meetingId: string) => {
-    try {
-      setSyncing(meetingId);
-      
-      const { data, error } = await supabase.functions.invoke("zoom-sync-recordings", {
-        body: {
-          meeting_id: meetingId,
-          course_id: courseId,
-        },
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Grabaciones sincronizadas",
-        description: `Se sincronizaron ${data.count || 0} grabaciones`,
-      });
-
-      loadRecordings();
-    } catch (error: any) {
-      console.error("Error syncing recordings:", error);
-      toast({
-        title: "Error",
-        description: error.message || "No se pudieron sincronizar las grabaciones",
-        variant: "destructive",
-      });
-    } finally {
-      setSyncing(null);
-    }
-  };
 
   const handleDeleteMeeting = async (meetingId: string) => {
     try {
@@ -329,16 +298,6 @@ const CourseZoom = ({ courseId }: CourseZoomProps) => {
                           }}
                         >
                           Copiar Enlace
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSyncRecordings(meeting.meeting_id)}
-                          disabled={syncing === meeting.meeting_id}
-                          className="flex items-center gap-1"
-                        >
-                          <RefreshCw className={`h-4 w-4 ${syncing === meeting.meeting_id ? 'animate-spin' : ''}`} />
-                          Sincronizar Grabaciones
                         </Button>
                       </div>
                     </div>
