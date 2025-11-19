@@ -122,7 +122,14 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
           .select("*")
           .in("id", teacherIds);
         
-        setAllTeachers(teachersData || []);
+        // Filter out teachers already assigned to this course
+        const assignedTeacherIds = teachers.map(t => t.id);
+        const availableTeachers = (teachersData || []).filter(
+          t => !assignedTeacherIds.includes(t.id)
+        );
+        setAllTeachers(availableTeachers);
+      } else {
+        setAllTeachers([]);
       }
 
       // Load all students from database
@@ -138,7 +145,14 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
           .select("*")
           .in("id", studentIds);
         
-        setAllStudents(studentsData || []);
+        // Filter out students already enrolled in this course
+        const enrolledStudentIds = students.map(s => s.id);
+        const availableStudents = (studentsData || []).filter(
+          s => !enrolledStudentIds.includes(s.id)
+        );
+        setAllStudents(availableStudents);
+      } else {
+        setAllStudents([]);
       }
     } catch (error) {
       console.error("Error loading all users:", error);
@@ -210,6 +224,7 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
       setSearchTeacherEmail("");
       setTeacherDialogOpen(false);
       loadPeople();
+      loadAllUsers();
     } catch (error: any) {
       console.error("Error adding teacher:", error);
       toast({
@@ -286,6 +301,7 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
       setSearchStudentEmail("");
       setStudentDialogOpen(false);
       loadPeople();
+      loadAllUsers();
     } catch (error: any) {
       console.error("Error adding student:", error);
       toast({
@@ -314,6 +330,7 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
       });
 
       loadPeople();
+      loadAllUsers();
     } catch (error: any) {
       console.error("Error removing teacher:", error);
       toast({
@@ -340,10 +357,104 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
       });
 
       loadPeople();
+      loadAllUsers();
     } catch (error: any) {
       console.error("Error removing student:", error);
       toast({
         title: "Error al remover estudiante",
+        description: error.message || "Intenta nuevamente",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleQuickAddTeacher = async (teacherId: string) => {
+    try {
+      // Check if already assigned
+      const { data: existing } = await supabase
+        .from("course_teachers")
+        .select("id")
+        .eq("course_id", courseId)
+        .eq("teacher_id", teacherId)
+        .single();
+
+      if (existing) {
+        toast({
+          title: "Ya asignado",
+          description: "Este profesor ya está asignado al curso",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Assign teacher to course
+      const { error } = await supabase
+        .from("course_teachers")
+        .insert({
+          course_id: courseId,
+          teacher_id: teacherId,
+          assigned_by: currentUserId!,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Profesor agregado",
+        description: "El profesor ha sido asignado al curso exitosamente",
+      });
+
+      loadPeople();
+      loadAllUsers();
+    } catch (error: any) {
+      console.error("Error adding teacher:", error);
+      toast({
+        title: "Error al agregar profesor",
+        description: error.message || "Intenta nuevamente",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleQuickAddStudent = async (studentId: string) => {
+    try {
+      // Check if already enrolled
+      const { data: existing } = await supabase
+        .from("course_enrollments")
+        .select("id")
+        .eq("course_id", courseId)
+        .eq("student_id", studentId)
+        .single();
+
+      if (existing) {
+        toast({
+          title: "Ya inscrito",
+          description: "Este estudiante ya está inscrito en el curso",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Enroll student
+      const { error } = await supabase
+        .from("course_enrollments")
+        .insert({
+          course_id: courseId,
+          student_id: studentId,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Estudiante agregado",
+        description: "El estudiante ha sido inscrito al curso exitosamente",
+      });
+
+      loadPeople();
+      loadAllUsers();
+    } catch (error: any) {
+      console.error("Error adding student:", error);
+      toast({
+        title: "Error al agregar estudiante",
         description: error.message || "Intenta nuevamente",
         variant: "destructive",
       });
@@ -441,14 +552,14 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
             {/* All Available Teachers */}
             {isAdmin && allTeachers.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold mb-3">Todos los Profesores Disponibles</h3>
+                <h3 className="text-sm font-semibold mb-3">Profesores Disponibles para Agregar</h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {allTeachers.map((teacher) => (
                     <div
                       key={teacher.id}
-                      className="flex items-center justify-between p-2 rounded-lg border hover:bg-accent transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                           <User className="h-4 w-4 text-primary" />
                         </div>
@@ -457,6 +568,13 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
                           <p className="text-xs text-muted-foreground">{teacher.email}</p>
                         </div>
                       </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleQuickAddTeacher(teacher.id)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Agregar
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -555,14 +673,14 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
             {/* All Available Students */}
             {isAdmin && allStudents.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold mb-3">Todos los Alumnos Disponibles</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                <h3 className="text-sm font-semibold mb-3">Alumnos Disponibles para Agregar</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
                   {allStudents.map((student) => (
                     <div
                       key={student.id}
-                      className="flex items-center justify-between p-2 rounded-lg border hover:bg-accent transition-colors"
+                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
                     >
-                      <div className="flex items-center gap-2 flex-1">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="h-8 w-8 rounded-full bg-secondary/10 flex items-center justify-center">
                           <User className="h-4 w-4 text-secondary" />
                         </div>
@@ -571,6 +689,13 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
                           <p className="text-xs text-muted-foreground truncate">{student.email}</p>
                         </div>
                       </div>
+                      <Button
+                        size="sm"
+                        onClick={() => handleQuickAddStudent(student.id)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Agregar
+                      </Button>
                     </div>
                   ))}
                 </div>
