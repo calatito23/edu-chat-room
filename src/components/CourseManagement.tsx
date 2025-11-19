@@ -36,19 +36,10 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
         const teacherIds = teacherAssignments.map((t) => t.teacher_id);
         const { data: teacherProfiles } = await supabase
           .from("profiles")
-          .select("id, full_name")
+          .select("id, full_name, email")
           .in("id", teacherIds);
 
-        // Get auth users to get their emails
-        const teachersWithEmails: any[] = [];
-        for (const teacher of (teacherProfiles || [])) {
-          teachersWithEmails.push({
-            ...teacher,
-            email: "Cargando..."
-          });
-        }
-
-        setTeachers(teachersWithEmails);
+        setTeachers(teacherProfiles || []);
       } else {
         setTeachers([]);
       }
@@ -63,19 +54,10 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
         const studentIds = enrollments.map((e) => e.student_id);
         const { data: studentProfiles } = await supabase
           .from("profiles")
-          .select("id, full_name")
+          .select("id, full_name, email")
           .in("id", studentIds);
 
-        // Get auth users to get their emails  
-        const studentsWithEmails: any[] = [];
-        for (const student of (studentProfiles || [])) {
-          studentsWithEmails.push({
-            ...student,
-            email: "Cargando..."
-          });
-        }
-
-        setStudents(studentsWithEmails);
+        setStudents(studentProfiles || []);
       } else {
         setStudents([]);
       }
@@ -89,15 +71,14 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
     setLoading(true);
 
     try {
-      // Search for user by email in auth.users using admin API
-      const { data: { users }, error: searchError } = await supabase.auth.admin.listUsers();
+      // Search for user by email in profiles table
+      const { data: foundProfile, error: searchError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", email.trim().toLowerCase())
+        .single();
       
-      if (searchError) throw searchError;
-      if (!users) throw new Error("No se pudieron cargar los usuarios");
-
-      const foundUser = users.find((u: any) => u.email === email);
-      
-      if (!foundUser) {
+      if (searchError || !foundProfile) {
         throw new Error("Usuario no encontrado con ese correo");
       }
 
@@ -105,7 +86,7 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", foundUser.id)
+        .eq("user_id", foundProfile.id)
         .single();
 
       if (!roleData || roleData.role !== userType) {
@@ -121,7 +102,7 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
           .from("course_teachers")
           .insert({
             course_id: courseId,
-            teacher_id: foundUser.id,
+            teacher_id: foundProfile.id,
             assigned_by: user.id,
           });
 
@@ -137,7 +118,7 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
           .from("course_enrollments")
           .insert({
             course_id: courseId,
-            student_id: foundUser.id,
+            student_id: foundProfile.id,
           });
 
         if (error) {
