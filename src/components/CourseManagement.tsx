@@ -113,14 +113,22 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
       }
 
       // Verify user has the correct role
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", foundProfile.id)
         .single();
 
-      if (!roleData || roleData.role !== userType) {
-        throw new Error(`El usuario no tiene el rol de ${userType === "teacher" ? "docente" : "estudiante"}`);
+      if (roleError || !roleData) {
+        throw new Error("No se pudo verificar el rol del usuario. Asegúrate de que el usuario tenga un rol asignado.");
+      }
+
+      // Check if role matches - administrator can be added as teacher
+      const isValidRole = roleData.role === userType || 
+                         (userType === "teacher" && roleData.role === "administrator");
+
+      if (!isValidRole) {
+        throw new Error(`El usuario tiene el rol de ${roleData.role}, pero intentas agregarlo como ${userType === "teacher" ? "docente" : "estudiante"}`);
       }
 
       const { data: { user } } = await supabase.auth.getUser();
