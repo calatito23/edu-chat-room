@@ -134,7 +134,7 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
         throw new Error("Usuario no encontrado con ese correo");
       }
 
-      // Verify user has the correct role
+      // Obtener rol del usuario desde el registro
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
@@ -147,21 +147,25 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
       }
 
       if (!roleData) {
-        throw new Error("El usuario no tiene un rol asignado en el sistema. Por favor, contacta al administrador para que le asigne un rol primero.");
+        throw new Error(
+          "El usuario no tiene un rol asignado en el sistema. Por favor, contacta al administrador para que le asigne un rol primero."
+        );
       }
 
-      // Check if role matches - administrator can be added as teacher
-      const isValidRole = roleData.role === userType || 
-                         (userType === "teacher" && roleData.role === "administrator");
+      // Usar siempre el rol registrado para determinar el tipo en el curso
+      const dbRole = roleData.role;
+      const effectiveType: "teacher" | "student" =
+        dbRole === "student" ? "student" : "teacher";
 
-      if (!isValidRole) {
-        throw new Error(`El usuario tiene el rol de ${roleData.role}, pero intentas agregarlo como ${userType === "teacher" ? "docente" : "estudiante"}. Por favor, cambia el tipo de usuario antes de agregarlo.`);
-      }
+      // Sincronizar el estado con el rol detectado
+      setUserType(effectiveType);
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
-      if (userType === "teacher") {
+      if (effectiveType === "teacher") {
         // Add teacher to course
         const { error } = await supabase
           .from("course_teachers")
@@ -196,7 +200,7 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
 
       toast({
         title: "¡Miembro agregado!",
-        description: `${userType === "teacher" ? "Docente" : "Estudiante"} agregado exitosamente al curso`,
+        description: `${effectiveType === "teacher" ? "Docente" : "Estudiante"} agregado exitosamente al curso`,
       });
 
       setEmail("");
@@ -279,23 +283,18 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="userType">Tipo de Usuario</Label>
-                <Select 
-                  value={userType} 
-                  onValueChange={(value: any) => setUserType(value)}
-                  disabled={detectingRole}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">Estudiante</SelectItem>
-                    <SelectItem value="teacher">Docente</SelectItem>
-                  </SelectContent>
-                </Select>
-                {detectingRole && (
-                  <p className="text-xs text-muted-foreground">Detectando rol...</p>
-                )}
+                <Label htmlFor="userType">Tipo de usuario (según registro)</Label>
+                <div className="flex items-center justify-between rounded-md border bg-muted px-3 py-2">
+                  <span className="text-sm">
+                    {userType === "teacher" ? "Docente" : "Estudiante"}
+                  </span>
+                  {detectingRole && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Este rol se detecta automáticamente a partir del registro del usuario.
+                </p>
               </div>
             </div>
             <Button type="submit" disabled={loading}>
