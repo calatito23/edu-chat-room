@@ -86,7 +86,46 @@ const Dashboard = () => {
 
   const loadCourses = async (userId: string, role: "student" | "teacher" | "administrator") => {
     try {
-      if (role === "teacher") {
+      if (role === "administrator") {
+        // Load all courses for administrator
+        const { data: coursesData, error } = await supabase
+          .from("courses")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        // Get enrollment counts for each course
+        const coursesWithDetails = await Promise.all(
+          (coursesData || []).map(async (course) => {
+            const { data: teacherProfile } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", course.teacher_id)
+              .single();
+
+            const { count } = await supabase
+              .from("course_enrollments")
+              .select("id", { count: "exact", head: true })
+              .eq("course_id", course.id);
+
+            // Count assigned teachers
+            const { count: teacherCount } = await supabase
+              .from("course_teachers")
+              .select("id", { count: "exact", head: true })
+              .eq("course_id", course.id);
+
+            return { 
+              ...course, 
+              profiles: teacherProfile,
+              enrollmentCount: count || 0,
+              teacherCount: teacherCount || 0
+            };
+          })
+        );
+
+        setCourses(coursesWithDetails);
+      } else if (role === "teacher") {
         // Load courses taught by teacher
         const { data: coursesData, error } = await supabase
           .from("courses")
