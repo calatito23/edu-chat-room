@@ -33,54 +33,7 @@ const JoinCourse = () => {
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuario no autenticado");
-
-      // Buscar curso por código
-      const { data: course, error: courseError } = await supabase
-        .from("courses")
-        .select("*")
-        .eq("code", code.toUpperCase())
-        .single();
-
-      if (courseError || !course) {
-        throw new Error("Código de curso no válido");
-      }
-
-      // Verificar si ya está inscrito
-      const { data: existingEnrollment } = await supabase
-        .from("course_enrollments")
-        .select("*")
-        .eq("course_id", course.id)
-        .eq("student_id", user.id)
-        .single();
-
-      if (existingEnrollment) {
-        toast({
-          title: "Ya estás inscrito",
-          description: "Ya estás inscrito en este curso",
-          variant: "destructive",
-        });
-        navigate(`/courses/${course.id}`);
-        return;
-      }
-
-      // Inscribirse al curso
-      const { error: enrollError } = await supabase
-        .from("course_enrollments")
-        .insert({
-          course_id: course.id,
-          student_id: user.id,
-        });
-
-      if (enrollError) throw enrollError;
-
-      toast({
-        title: "¡Inscrito exitosamente!",
-        description: `Te has unido al curso: ${course.title}`,
-      });
-
-      navigate(`/courses/${course.id}`);
+      throw new Error("La inscripción manual está deshabilitada. Contacta a un administrador para ser agregado al curso.");
     } catch (error: any) {
       console.error("Error joining course:", error);
       toast({

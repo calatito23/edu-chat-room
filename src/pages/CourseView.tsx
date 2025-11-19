@@ -33,7 +33,7 @@ const CourseView = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [course, setCourse] = useState<any>(null);
-  const [userRole, setUserRole] = useState<"student" | "teacher" | null>(null);
+  const [userRole, setUserRole] = useState<"student" | "teacher" | "administrator" | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [enrollCode, setEnrollCode] = useState("");

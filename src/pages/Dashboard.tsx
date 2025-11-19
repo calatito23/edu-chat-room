@@ -27,7 +27,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<"student" | "teacher" | null>(null);
+  const [userRole, setUserRole] = useState<"student" | "teacher" | "administrator" | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,9 +85,9 @@ const Dashboard = () => {
     }
   };
 
-  const loadCourses = async (userId: string, role: "student" | "teacher") => {
+  const loadCourses = async (userId: string, role: "student" | "teacher" | "administrator") => {
     try {
-      if (role === "teacher") {
+      if (role === "teacher" || role === "administrator") {
         // Load courses taught by teacher
         const { data: coursesData, error } = await supabase
           .from("courses")
@@ -221,12 +221,7 @@ const Dashboard = () => {
               <Plus className="h-4 w-4 mr-2" />
               Crear Curso
             </Button>
-          ) : (
-            <Button onClick={() => navigate("/courses/join")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Unirse a Curso
-            </Button>
-          )}
+          ) : null}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -235,11 +230,13 @@ const Dashboard = () => {
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-muted-foreground text-center">
-                  {userRole === "teacher"
+                  {userRole === "administrator"
                     ? "Aún no has creado ningún curso. ¡Comienza creando tu primer curso!"
-                    : "Aún no estás inscrito en ningún curso. Pide a tu profesor el código del curso."}
+                    : userRole === "teacher" 
+                    ? "No tienes ningún curso asignado. Contacta a un administrador."
+                    : "Aún no estás inscrito en ningún curso. Pide a un administrador que te agregue a un curso."}
                 </p>
-                {userRole === "teacher" && (
+                {userRole === "administrator" && (
                   <Button className="mt-4" onClick={() => navigate("/courses/create")}>
                     Crear Primer Curso
                   </Button>

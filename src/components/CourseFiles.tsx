@@ -34,7 +34,7 @@ import { Badge } from "@/components/ui/badge";
  */
 interface CourseFilesProps {
   courseId: string;
-  userRole: "student" | "teacher";
+  userRole: "student" | "teacher" | "administrator";
   teacherId: string;
   initialWeek?: number;
 }
@@ -272,7 +272,7 @@ const CourseFiles = ({ courseId, userRole, teacherId, initialWeek }: CourseFiles
                   <AccordionContent>
                     <div className="space-y-4 pt-4">
                       {/* Botón de subir archivo (solo profesores) */}
-                      {userRole === "teacher" && (
+                      {(userRole === "teacher" || userRole === "administrator") && (
                         <div className="flex justify-end">
                           <label htmlFor={`file-upload-week-${weekNumber}`}>
                             <Button 
@@ -347,7 +347,7 @@ const CourseFiles = ({ courseId, userRole, teacherId, initialWeek }: CourseFiles
                                 >
                                   <Download className="h-4 w-4" />
                                 </Button>
-                                {userRole === "teacher" && currentUserId === teacherId && (
+                                {(userRole === "teacher" || userRole === "administrator") && currentUserId === teacherId && (
                                   <Button
                                     variant="outline"
                                     size="sm"

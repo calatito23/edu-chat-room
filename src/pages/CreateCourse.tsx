@@ -48,13 +48,24 @@ const CreateCourse = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
+      // Verificar que el usuario sea administrador
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!roleData || roleData.role !== "administrator") {
+        throw new Error("Solo los administradores pueden crear cursos");
+      }
+
       const { data, error } = await supabase
         .from("courses")
         .insert({
           title,
           description,
           code: code.toUpperCase(),
-          teacher_id: user.id,
+          created_by: user.id,
         })
         .select()
         .single();
