@@ -627,7 +627,7 @@ export type Database = {
         | "file_upload"
         | "true_false"
         | "matching"
-      user_role: "student" | "teacher"
+      user_role: "student" | "teacher" | "administrator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -763,7 +763,7 @@ export const Constants = {
         "true_false",
         "matching",
       ],
-      user_role: ["student", "teacher"],
+      user_role: ["student", "teacher", "administrator"],
     },
   },
 } as const
