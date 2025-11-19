@@ -29,7 +29,6 @@ const CreateCourse = () => {
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [code, setCode] = useState("");
 
   const generateCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -37,7 +36,7 @@ const CreateCourse = () => {
     for (let i = 0; i < 6; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setCode(result);
+    return result;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,12 +58,15 @@ const CreateCourse = () => {
         throw new Error("Solo los administradores pueden crear cursos");
       }
 
+      // Generar código único automáticamente
+      const generatedCode = generateCode();
+
       const { data, error } = await supabase
         .from("courses")
         .insert({
           title,
           description,
-          code: code.toUpperCase(),
+          code: generatedCode,
           created_by: user.id,
         })
         .select()
@@ -82,9 +84,7 @@ const CreateCourse = () => {
       console.error("Error creating course:", error);
       toast({
         title: "Error al crear curso",
-        description: error.message?.includes("duplicate") 
-          ? "Este código ya existe. Genera uno nuevo."
-          : error.message || "Intenta nuevamente",
+        description: error.message || "Intenta nuevamente",
         variant: "destructive",
       });
     } finally {
@@ -133,31 +133,6 @@ const CreateCourse = () => {
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
                 />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="code">Código del Curso *</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={generateCode}
-                  >
-                    Generar Código
-                  </Button>
-                </div>
-                <Input
-                  id="code"
-                  placeholder="Ej: MAT2024"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  required
-                  maxLength={10}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Los alumnos usarán este código para inscribirse al curso
-                </p>
               </div>
 
               <div className="flex gap-3">
