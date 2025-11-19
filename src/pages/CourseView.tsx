@@ -37,7 +37,7 @@ const CourseView = () => {
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [enrollCode, setEnrollCode] = useState("");
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "stream");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "people");
 
   useEffect(() => {
     loadCourseData();
@@ -47,8 +47,11 @@ const CourseView = () => {
     const tab = searchParams.get("tab");
     if (tab) {
       setActiveTab(tab);
+    } else if (userRole === "administrator") {
+      // Administradores siempre van a la pestaña de personas
+      setActiveTab("people");
     }
-  }, [searchParams]);
+  }, [searchParams, userRole]);
 
   const loadCourseData = async () => {
     try {
@@ -218,61 +221,80 @@ const CourseView = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 max-w-4xl">
-            <TabsTrigger value="stream">
-              <FileText className="h-4 w-4 mr-2" />
-              Publicaciones
-            </TabsTrigger>
-            <TabsTrigger value="people">
-              <Users className="h-4 w-4 mr-2" />
-              Personas
-            </TabsTrigger>
-            <TabsTrigger value="files">
-              <Upload className="h-4 w-4 mr-2" />
-              Archivos
-            </TabsTrigger>
-            <TabsTrigger value="evaluations">
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Evaluaciones
-            </TabsTrigger>
-            <TabsTrigger value="grades">
-              <Award className="h-4 w-4 mr-2" />
-              Notas
-            </TabsTrigger>
-            <TabsTrigger value="zoom">
-              <Video className="h-4 w-4 mr-2" />
-              Zoom
-            </TabsTrigger>
-          </TabsList>
+          {userRole === "administrator" ? (
+            // Vista de administrador: solo Personas
+            <>
+              <TabsList className="grid w-full max-w-md">
+                <TabsTrigger value="people">
+                  <Users className="h-4 w-4 mr-2" />
+                  Personas
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="stream" className="mt-6">
-            <CourseStream courseId={courseId!} userRole={userRole!} />
-          </TabsContent>
+              <TabsContent value="people" className="mt-6">
+                <CoursePeople courseId={courseId!} teacherId={course?.teacher_id} />
+              </TabsContent>
+            </>
+          ) : (
+            // Vista de profesor y estudiante: todas las pestañas
+            <>
+              <TabsList className="grid w-full grid-cols-6 max-w-4xl">
+                <TabsTrigger value="stream">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Publicaciones
+                </TabsTrigger>
+                <TabsTrigger value="people">
+                  <Users className="h-4 w-4 mr-2" />
+                  Personas
+                </TabsTrigger>
+                <TabsTrigger value="files">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Archivos
+                </TabsTrigger>
+                <TabsTrigger value="evaluations">
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  Evaluaciones
+                </TabsTrigger>
+                <TabsTrigger value="grades">
+                  <Award className="h-4 w-4 mr-2" />
+                  Notas
+                </TabsTrigger>
+                <TabsTrigger value="zoom">
+                  <Video className="h-4 w-4 mr-2" />
+                  Zoom
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="people" className="mt-6">
-            <CoursePeople courseId={courseId!} teacherId={course?.teacher_id} />
-          </TabsContent>
+              <TabsContent value="stream" className="mt-6">
+                <CourseStream courseId={courseId!} userRole={userRole!} />
+              </TabsContent>
 
-          <TabsContent value="files" className="mt-6">
-            <CourseFiles 
-              courseId={courseId!} 
-              userRole={userRole!} 
-              teacherId={course?.teacher_id}
-              initialWeek={searchParams.get("week") ? parseInt(searchParams.get("week")!) : undefined}
-            />
-          </TabsContent>
+              <TabsContent value="people" className="mt-6">
+                <CoursePeople courseId={courseId!} teacherId={course?.teacher_id} />
+              </TabsContent>
 
-          <TabsContent value="evaluations" className="mt-6">
-            <CourseEvaluations courseId={courseId!} userRole={userRole!} />
-          </TabsContent>
+              <TabsContent value="files" className="mt-6">
+                <CourseFiles 
+                  courseId={courseId!} 
+                  userRole={userRole!} 
+                  teacherId={course?.teacher_id}
+                  initialWeek={searchParams.get("week") ? parseInt(searchParams.get("week")!) : undefined}
+                />
+              </TabsContent>
 
-          <TabsContent value="grades" className="mt-6">
-            <CourseGrades courseId={courseId!} userRole={userRole!} />
-          </TabsContent>
+              <TabsContent value="evaluations" className="mt-6">
+                <CourseEvaluations courseId={courseId!} userRole={userRole!} />
+              </TabsContent>
 
-          <TabsContent value="zoom" className="mt-6">
-            <CourseZoom courseId={courseId!} userRole={userRole!} />
-          </TabsContent>
+              <TabsContent value="grades" className="mt-6">
+                <CourseGrades courseId={courseId!} userRole={userRole!} />
+              </TabsContent>
+
+              <TabsContent value="zoom" className="mt-6">
+                <CourseZoom courseId={courseId!} userRole={userRole!} />
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </main>
     </div>
