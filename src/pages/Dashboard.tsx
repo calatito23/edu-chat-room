@@ -88,11 +88,11 @@ const Dashboard = () => {
   const loadCourses = async (userId: string, role: "student" | "teacher" | "administrator") => {
     try {
       if (role === "teacher" || role === "administrator") {
-        // Load courses taught by teacher
+        // Load courses created by administrator or assigned to teacher
         const { data: coursesData, error } = await supabase
           .from("courses")
           .select("*")
-          .eq("teacher_id", userId)
+          .or(`teacher_id.eq.${userId},created_by.eq.${userId}`)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
