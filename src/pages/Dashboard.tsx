@@ -26,7 +26,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<"student" | "teacher" | null>(null);
+  const [userRole, setUserRole] = useState<"student" | "teacher" | "administrator" | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,7 +84,7 @@ const Dashboard = () => {
     }
   };
 
-  const loadCourses = async (userId: string, role: "student" | "teacher") => {
+  const loadCourses = async (userId: string, role: "student" | "teacher" | "administrator") => {
     try {
       if (role === "teacher") {
         // Load courses taught by teacher
@@ -177,67 +177,74 @@ const Dashboard = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">
-          {userRole === "teacher" ? "Mis Cursos" : "Cursos Inscritos"}
+          {userRole === "administrator" ? "Gestión de Cursos" : userRole === "teacher" ? "Mis Cursos" : "Cursos Inscritos"}
         </h2>
-        {userRole === "teacher" ? (
-          <Button onClick={() => navigate("/courses/create")}>
+        {userRole === "administrator" && (
+          <Button onClick={() => navigate("/create-course")}>
             <Plus className="h-4 w-4 mr-2" />
             Crear Curso
-          </Button>
-        ) : (
-          <Button onClick={() => navigate("/courses/join")}>
-            <Plus className="h-4 w-4 mr-2" />
-            Unirse a Curso
           </Button>
         )}
       </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.length === 0 ? (
-            <Card className="col-span-full">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-center">
-                  {userRole === "teacher"
-                    ? "Aún no has creado ningún curso. ¡Comienza creando tu primer curso!"
-                    : "Aún no estás inscrito en ningún curso. Pide a tu profesor el código del curso."}
-                </p>
-                {userRole === "teacher" && (
-                  <Button className="mt-4" onClick={() => navigate("/courses/create")}>
-                    Crear Primer Curso
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            courses.map((course) => (
-              <Card
-                key={course.id}
-                className="hover:shadow-[var(--shadow-elevated)] transition-all cursor-pointer"
-                onClick={() => navigate(`/courses/${course.id}`)}
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    {course.title}
-                  </CardTitle>
-                  <CardDescription>
-                    Código: {course.code}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {courses.length === 0 ? (
+          <Card className="col-span-full">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground text-center">
+                {userRole === "administrator"
+                  ? "Aún no hay cursos creados. ¡Comienza creando tu primer curso!"
+                  : userRole === "teacher"
+                  ? "Aún no estás asignado a ningún curso. Contacta al administrador."
+                  : "Aún no estás inscrito en ningún curso. Contacta al administrador."}
+              </p>
+              {userRole === "administrator" && (
+                <Button className="mt-4" onClick={() => navigate("/create-course")}>
+                  Crear Primer Curso
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          courses.map((course) => (
+            <Card
+              key={course.id}
+              className="hover:shadow-[var(--shadow-elevated)] transition-all cursor-pointer"
+              onClick={() => navigate(`/courses/${course.id}`)}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  {course.title}
+                </CardTitle>
+                <CardDescription>
+                  Código: {course.code}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                   {course.description || "Sin descripción"}
                 </p>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {userRole === "teacher" ? "Profesor:" : "Impartido por:"}{" "}
-                    {course.profiles?.full_name}
-                  </span>
-                  {userRole === "teacher" && (
+                  {userRole === "administrator" ? (
+                    <>
+                      <span className="flex items-center gap-1 text-primary">
+                        <Users className="h-4 w-4" />
+                        {course.enrollmentCount} estudiantes
+                      </span>
+                      <span className="text-muted-foreground">
+                        {course.teacherCount || 0} docentes
+                      </span>
+                    </>
+                  ) : userRole === "teacher" ? (
                     <span className="flex items-center gap-1 text-primary">
                       <Users className="h-4 w-4" />
-                      {course.enrollmentCount}
+                      {course.enrollmentCount} estudiantes
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {course.profiles?.full_name || "Sin docente"}
                     </span>
                   )}
                 </div>

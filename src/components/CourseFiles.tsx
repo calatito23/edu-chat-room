@@ -34,7 +34,7 @@ import { Badge } from "@/components/ui/badge";
  */
 interface CourseFilesProps {
   courseId: string;
-  userRole: "student" | "teacher";
+  userRole: "student" | "teacher" | "administrator";
   teacherId: string;
   initialWeek?: number;
 }

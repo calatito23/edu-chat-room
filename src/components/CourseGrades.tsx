@@ -10,7 +10,7 @@ import { Settings } from "lucide-react";
 
 interface CourseGradesProps {
   courseId: string;
-  userRole: "teacher" | "student";
+  userRole: "teacher" | "student" | "administrator";
 }
 
 interface Student {

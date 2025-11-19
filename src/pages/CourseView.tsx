@@ -11,6 +11,7 @@ import CoursePeople from "@/components/CoursePeople";
 import CourseFiles from "@/components/CourseFiles";
 import CourseEvaluations from "@/components/CourseEvaluations";
 import CourseGrades from "@/components/CourseGrades";
+import CourseManagement from "@/components/CourseManagement";
 import CourseZoom from "@/components/CourseZoom";
 
 /**
@@ -33,7 +34,7 @@ const CourseView = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [course, setCourse] = useState<any>(null);
-  const [userRole, setUserRole] = useState<"student" | "teacher" | null>(null);
+  const [userRole, setUserRole] = useState<"student" | "teacher" | "administrator" | null>(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [enrollCode, setEnrollCode] = useState("");
@@ -87,7 +88,7 @@ const CourseView = () => {
 
       setCourse({ ...courseData, profiles: teacherProfile });
 
-      // Check if user is enrolled (for students)
+      // Check if user has access to the course
       if (roleData?.role === "student") {
         const { data: enrollmentData } = await supabase
           .from("course_enrollments")
@@ -98,7 +99,16 @@ const CourseView = () => {
 
         setIsEnrolled(!!enrollmentData);
       } else if (roleData?.role === "teacher") {
-        setIsEnrolled(courseData.teacher_id === user.id);
+        const { data: assignmentData } = await supabase
+          .from("course_teachers")
+          .select("*")
+          .eq("course_id", courseId)
+          .eq("teacher_id", user.id)
+          .single();
+
+        setIsEnrolled(!!assignmentData);
+      } else if (roleData?.role === "administrator") {
+        setIsEnrolled(true); // Admins have access to all courses
       }
     } catch (error: any) {
       console.error("Error loading course:", error);
@@ -246,32 +256,36 @@ const CourseView = () => {
           </TabsList>
 
           <TabsContent value="stream" className="mt-6">
-            <CourseStream courseId={courseId!} userRole={userRole!} />
+            <CourseStream courseId={courseId!} userRole={userRole! as "student" | "teacher" | "administrator"} />
           </TabsContent>
 
           <TabsContent value="people" className="mt-6">
-            <CoursePeople courseId={courseId!} teacherId={course?.teacher_id} />
+            {userRole === "administrator" ? (
+              <CourseManagement courseId={courseId!} />
+            ) : (
+              <CoursePeople courseId={courseId!} teacherId={course?.teacher_id} />
+            )}
           </TabsContent>
 
           <TabsContent value="files" className="mt-6">
             <CourseFiles 
               courseId={courseId!} 
-              userRole={userRole!} 
+              userRole={userRole! as "student" | "teacher" | "administrator"} 
               teacherId={course?.teacher_id}
               initialWeek={searchParams.get("week") ? parseInt(searchParams.get("week")!) : undefined}
             />
           </TabsContent>
 
           <TabsContent value="evaluations" className="mt-6">
-            <CourseEvaluations courseId={courseId!} userRole={userRole!} />
+            <CourseEvaluations courseId={courseId!} userRole={userRole! as "student" | "teacher" | "administrator"} />
           </TabsContent>
 
           <TabsContent value="grades" className="mt-6">
-            <CourseGrades courseId={courseId!} userRole={userRole!} />
+            <CourseGrades courseId={courseId!} userRole={userRole! as "student" | "teacher" | "administrator"} />
           </TabsContent>
 
           <TabsContent value="zoom" className="mt-6">
-            <CourseZoom courseId={courseId!} userRole={userRole!} />
+            <CourseZoom courseId={courseId!} userRole={userRole! as "student" | "teacher" | "administrator"} />
           </TabsContent>
         </Tabs>
       </main>

@@ -40,7 +40,7 @@ const Auth = () => {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupFullName, setSignupFullName] = useState("");
-  const [signupRole, setSignupRole] = useState<"student" | "teacher">("student");
+  const [signupRole, setSignupRole] = useState<"student" | "teacher" | "administrator">("student");
 
   // Reset password state
   const [resetEmail, setResetEmail] = useState("");
@@ -268,13 +268,14 @@ const Auth = () => {
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="signup-role" className="text-sm">Tipo de Usuario</Label>
-                    <Select value={signupRole} onValueChange={(value: "student" | "teacher") => setSignupRole(value)}>
+                    <Select value={signupRole} onValueChange={(value: "student" | "teacher" | "administrator") => setSignupRole(value)}>
                       <SelectTrigger id="signup-role" className="h-9">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="student">Alumno</SelectItem>
                         <SelectItem value="teacher">Profesor</SelectItem>
+                        <SelectItem value="administrator">Administrador</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
