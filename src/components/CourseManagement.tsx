@@ -19,6 +19,7 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
   const [userType, setUserType] = useState<"teacher" | "student">("student");
   const [teachers, setTeachers] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [detectingRole, setDetectingRole] = useState(false);
 
   useEffect(() => {
     loadMembers();
@@ -63,6 +64,35 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
       }
     } catch (error: any) {
       console.error("Error loading members:", error);
+    }
+  };
+
+  const detectUserRole = async (emailValue: string) => {
+    if (!emailValue || !emailValue.includes("@")) return;
+    
+    setDetectingRole(true);
+    try {
+      const { data: foundProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("email", emailValue.trim().toLowerCase())
+        .single();
+      
+      if (foundProfile) {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", foundProfile.id)
+          .single();
+
+        if (roleData && (roleData.role === "teacher" || roleData.role === "student")) {
+          setUserType(roleData.role);
+        }
+      }
+    } catch (error) {
+      // Silently fail if user not found
+    } finally {
+      setDetectingRole(false);
     }
   };
 
@@ -204,12 +234,17 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
                   placeholder="usuario@unmsm.edu.pe"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={(e) => detectUserRole(e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="userType">Tipo de Usuario</Label>
-                <Select value={userType} onValueChange={(value: any) => setUserType(value)}>
+                <Select 
+                  value={userType} 
+                  onValueChange={(value: any) => setUserType(value)}
+                  disabled={detectingRole}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -218,6 +253,9 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
                     <SelectItem value="teacher">Docente</SelectItem>
                   </SelectContent>
                 </Select>
+                {detectingRole && (
+                  <p className="text-xs text-muted-foreground">Detectando rol...</p>
+                )}
               </div>
             </div>
             <Button type="submit" disabled={loading}>
