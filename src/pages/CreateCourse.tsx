@@ -54,7 +54,7 @@ const CreateCourse = () => {
           title,
           description,
           code: code.toUpperCase(),
-          teacher_id: user.id,
+          created_by: user.id,
         })
         .select()
         .single();
