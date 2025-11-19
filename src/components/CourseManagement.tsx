@@ -72,30 +72,47 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
     
     setDetectingRole(true);
     try {
-      const { data: foundProfile } = await supabase
+      const { data: foundProfile, error: profileError } = await supabase
         .from("profiles")
         .select("id")
         .eq("email", emailValue.trim().toLowerCase())
         .single();
       
-      if (foundProfile) {
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", foundProfile.id)
-          .single();
-
-        if (roleData) {
-          // Map administrator to teacher, keep student and teacher as is
-          if (roleData.role === "administrator" || roleData.role === "teacher") {
-            setUserType("teacher");
-          } else if (roleData.role === "student") {
-            setUserType("student");
-          }
-        }
+      if (profileError || !foundProfile) {
+        console.log("Usuario no encontrado");
+        setDetectingRole(false);
+        return;
       }
-    } catch (error) {
-      // Silently fail if user not found
+
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", foundProfile.id)
+        .single();
+
+      if (roleError || !roleData) {
+        toast({
+          title: "Advertencia",
+          description: "El usuario no tiene un rol asignado. Contacta al administrador del sistema.",
+          variant: "destructive",
+        });
+        setDetectingRole(false);
+        return;
+      }
+
+      // Map administrator to teacher, keep student and teacher as is
+      if (roleData.role === "administrator" || roleData.role === "teacher") {
+        setUserType("teacher");
+      } else if (roleData.role === "student") {
+        setUserType("student");
+      }
+    } catch (error: any) {
+      console.error("Error detecting role:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo detectar el rol del usuario",
+        variant: "destructive",
+      });
     } finally {
       setDetectingRole(false);
     }
@@ -124,8 +141,13 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
         .eq("user_id", foundProfile.id)
         .single();
 
-      if (roleError || !roleData) {
-        throw new Error("No se pudo verificar el rol del usuario. Asegúrate de que el usuario tenga un rol asignado.");
+      if (roleError) {
+        console.error("Role error:", roleError);
+        throw new Error(`Error al consultar el rol: ${roleError.message}`);
+      }
+
+      if (!roleData) {
+        throw new Error("El usuario no tiene un rol asignado en el sistema. Por favor, contacta al administrador para que le asigne un rol primero.");
       }
 
       // Check if role matches - administrator can be added as teacher
@@ -133,7 +155,7 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
                          (userType === "teacher" && roleData.role === "administrator");
 
       if (!isValidRole) {
-        throw new Error(`El usuario tiene el rol de ${roleData.role}, pero intentas agregarlo como ${userType === "teacher" ? "docente" : "estudiante"}`);
+        throw new Error(`El usuario tiene el rol de ${roleData.role}, pero intentas agregarlo como ${userType === "teacher" ? "docente" : "estudiante"}. Por favor, cambia el tipo de usuario antes de agregarlo.`);
       }
 
       const { data: { user } } = await supabase.auth.getUser();
