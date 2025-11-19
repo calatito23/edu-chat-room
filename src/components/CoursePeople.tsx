@@ -37,10 +37,13 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
   const [isAddingStudent, setIsAddingStudent] = useState(false);
   const [teacherDialogOpen, setTeacherDialogOpen] = useState(false);
   const [studentDialogOpen, setStudentDialogOpen] = useState(false);
+  const [allTeachers, setAllTeachers] = useState<any[]>([]);
+  const [allStudents, setAllStudents] = useState<any[]>([]);
 
   useEffect(() => {
     checkUserRole();
     loadPeople();
+    loadAllUsers();
   }, [courseId]);
 
   const checkUserRole = async () => {
@@ -101,6 +104,44 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
       }
     } catch (error) {
       console.error("Error loading people:", error);
+    }
+  };
+
+  const loadAllUsers = async () => {
+    try {
+      // Load all teachers from database
+      const { data: teacherRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "teacher");
+
+      if (teacherRoles && teacherRoles.length > 0) {
+        const teacherIds = teacherRoles.map(r => r.user_id);
+        const { data: teachersData } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("id", teacherIds);
+        
+        setAllTeachers(teachersData || []);
+      }
+
+      // Load all students from database
+      const { data: studentRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "student");
+
+      if (studentRoles && studentRoles.length > 0) {
+        const studentIds = studentRoles.map(r => r.user_id);
+        const { data: studentsData } = await supabase
+          .from("profiles")
+          .select("*")
+          .in("id", studentIds);
+        
+        setAllStudents(studentsData || []);
+      }
+    } catch (error) {
+      console.error("Error loading all users:", error);
     }
   };
 
@@ -358,39 +399,70 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
           </div>
         </CardHeader>
         <CardContent>
-          {teachers.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No hay profesores asignados a este curso
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {teachers.map((teacher) => (
-                <div
-                  key={teacher.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-primary/5"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{teacher.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{teacher.email}</p>
-                    </div>
-                  </div>
-                  {isAdmin && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveTeacher(teacher.id)}
+          <div className="space-y-6">
+            {/* Assigned Teachers */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Profesores Asignados</h3>
+              {teachers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4 text-sm">
+                  No hay profesores asignados a este curso
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {teachers.map((teacher) => (
+                    <div
+                      key={teacher.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-primary/5"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{teacher.full_name}</p>
+                          <p className="text-sm text-muted-foreground">{teacher.email}</p>
+                        </div>
+                      </div>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveTeacher(teacher.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
+
+            {/* All Available Teachers */}
+            {isAdmin && allTeachers.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Todos los Profesores Disponibles</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {allTeachers.map((teacher) => (
+                    <div
+                      key={teacher.id}
+                      className="flex items-center justify-between p-2 rounded-lg border hover:bg-accent transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{teacher.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{teacher.email}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -441,39 +513,70 @@ const CoursePeople = ({ courseId, teacherId }: CoursePeopleProps) => {
           </div>
         </CardHeader>
         <CardContent>
-          {students.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              Aún no hay alumnos inscritos en este curso
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {students.map((student) => (
-                <div
-                  key={student.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="h-10 w-10 rounded-full bg-secondary/10 flex items-center justify-center">
-                      <User className="h-5 w-5 text-secondary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{student.full_name}</p>
-                      <p className="text-sm text-muted-foreground truncate">{student.email}</p>
-                    </div>
-                  </div>
-                  {isAdmin && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveStudent(student.id)}
+          <div className="space-y-6">
+            {/* Enrolled Students */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Alumnos Inscritos</h3>
+              {students.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4 text-sm">
+                  Aún no hay alumnos inscritos en este curso
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {students.map((student) => (
+                    <div
+                      key={student.id}
+                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  )}
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="h-10 w-10 rounded-full bg-secondary/10 flex items-center justify-center">
+                          <User className="h-5 w-5 text-secondary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{student.full_name}</p>
+                          <p className="text-sm text-muted-foreground truncate">{student.email}</p>
+                        </div>
+                      </div>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveStudent(student.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
+
+            {/* All Available Students */}
+            {isAdmin && allStudents.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Todos los Alumnos Disponibles</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                  {allStudents.map((student) => (
+                    <div
+                      key={student.id}
+                      className="flex items-center justify-between p-2 rounded-lg border hover:bg-accent transition-colors"
+                    >
+                      <div className="flex items-center gap-2 flex-1">
+                        <div className="h-8 w-8 rounded-full bg-secondary/10 flex items-center justify-center">
+                          <User className="h-4 w-4 text-secondary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{student.full_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
