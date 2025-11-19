@@ -85,8 +85,13 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
           .eq("user_id", foundProfile.id)
           .single();
 
-        if (roleData && (roleData.role === "teacher" || roleData.role === "student")) {
-          setUserType(roleData.role);
+        if (roleData) {
+          // Map administrator to teacher, keep student and teacher as is
+          if (roleData.role === "administrator" || roleData.role === "teacher") {
+            setUserType("teacher");
+          } else if (roleData.role === "student") {
+            setUserType("student");
+          }
         }
       }
     } catch (error) {
@@ -241,8 +246,13 @@ export default function CourseManagement({ courseId }: CourseManagementProps) {
                   type="email"
                   placeholder="usuario@unmsm.edu.pe"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={(e) => detectUserRole(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    // Detect role when email is complete
+                    if (e.target.value.includes("@") && e.target.value.length > 5) {
+                      detectUserRole(e.target.value);
+                    }
+                  }}
                   required
                 />
               </div>
