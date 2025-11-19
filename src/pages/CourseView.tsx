@@ -210,10 +210,6 @@ const CourseView = () => {
           <div className="space-y-2">
             <h1 className="text-3xl font-bold">{course?.title}</h1>
             <p className="text-muted-foreground">{course?.description}</p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Código: {course?.code}</span>
-              <span>Profesor: {course?.profiles?.full_name}</span>
-            </div>
           </div>
         </div>
       </header>

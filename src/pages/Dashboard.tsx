@@ -88,32 +88,51 @@ const Dashboard = () => {
   const loadCourses = async (userId: string, role: "student" | "teacher" | "administrator") => {
     try {
       if (role === "teacher" || role === "administrator") {
-        // Load courses created by administrator or assigned to teacher
-        const { data: coursesData, error } = await supabase
+        // Load courses created by administrator
+        const { data: createdCourses, error: createdError } = await supabase
           .from("courses")
           .select("*")
-          .or(`teacher_id.eq.${userId},created_by.eq.${userId}`)
+          .eq("created_by", userId)
           .order("created_at", { ascending: false });
 
-        if (error) throw error;
+        if (createdError) throw createdError;
 
-        // Get teacher profiles and enrollment counts
+        // Load courses where user is assigned as teacher
+        const { data: teacherAssignments, error: assignmentError } = await supabase
+          .from("course_teachers")
+          .select("course_id")
+          .eq("teacher_id", userId);
+
+        if (assignmentError) throw assignmentError;
+
+        let assignedCourses: any[] = [];
+        if (teacherAssignments && teacherAssignments.length > 0) {
+          const courseIds = teacherAssignments.map(ta => ta.course_id);
+          const { data: assignedCoursesData } = await supabase
+            .from("courses")
+            .select("*")
+            .in("id", courseIds)
+            .order("created_at", { ascending: false });
+          
+          assignedCourses = assignedCoursesData || [];
+        }
+
+        // Combine and deduplicate courses
+        const allCourses = [...(createdCourses || []), ...assignedCourses];
+        const uniqueCourses = Array.from(
+          new Map(allCourses.map(course => [course.id, course])).values()
+        );
+
+        // Get enrollment counts
         const coursesWithDetails = await Promise.all(
-          (coursesData || []).map(async (course) => {
-            const { data: teacherProfile } = await supabase
-              .from("profiles")
-              .select("full_name")
-              .eq("id", course.teacher_id)
-              .single();
-
+          uniqueCourses.map(async (course) => {
             const { count } = await supabase
               .from("course_enrollments")
               .select("id", { count: "exact", head: true })
               .eq("course_id", course.id);
 
             return { 
-              ...course, 
-              profiles: teacherProfile,
+              ...course,
               enrollmentCount: count || 0 
             };
           })
@@ -255,9 +274,6 @@ const Dashboard = () => {
                     <BookOpen className="h-5 w-5 text-primary" />
                     {course.title}
                   </CardTitle>
-                  <CardDescription>
-                    Código: {course.code}
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
