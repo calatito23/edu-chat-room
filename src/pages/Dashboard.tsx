@@ -183,13 +183,13 @@ const Dashboard = () => {
           {userRole === "administrator" ? "Gestión de Cursos" : userRole === "teacher" ? "Mis Cursos" : "Cursos Inscritos"}
         </h2>
         {userRole === "administrator" && (
-          <Button onClick={() => navigate("/create-course")}>
+          <Button onClick={() => navigate("/courses/create")}>
             <Plus className="h-4 w-4 mr-2" />
             Crear Curso
           </Button>
         )}
       </div>
-
+ 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.length === 0 ? (
           <Card className="col-span-full">
@@ -203,7 +203,7 @@ const Dashboard = () => {
                   : "Aún no estás inscrito en ningún curso. Contacta al administrador."}
               </p>
               {userRole === "administrator" && (
-                <Button className="mt-4" onClick={() => navigate("/create-course")}>
+                <Button className="mt-4" onClick={() => navigate("/courses/create")}>
                   Crear Primer Curso
                 </Button>
               )}
