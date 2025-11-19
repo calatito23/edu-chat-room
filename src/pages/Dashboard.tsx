@@ -148,12 +148,15 @@ const Dashboard = () => {
         setCourses(coursesWithProfiles);
       }
     } catch (error: any) {
+      // Only show error toast for actual errors, not for empty results
       console.error("Error loading courses:", error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los cursos",
-        variant: "destructive",
-      });
+      if (error?.code && error.code !== 'PGRST116') {
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los cursos",
+          variant: "destructive",
+        });
+      }
     }
   };
 
