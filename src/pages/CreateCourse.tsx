@@ -63,10 +63,10 @@ const CreateCourse = () => {
 
       toast({
         title: "¡Curso creado!",
-        description: "El curso ha sido creado exitosamente",
+        description: "Ahora puedes agregar docentes y estudiantes al curso",
       });
 
-      navigate(`/courses/${data.id}`);
+      navigate(`/courses/${data.id}?tab=people`);
     } catch (error: any) {
       console.error("Error creating course:", error);
       toast({
