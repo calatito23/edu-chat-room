@@ -36,7 +36,7 @@ interface Question {
 
 interface CourseEvaluationsProps {
   courseId: string;
-  userRole: "teacher" | "student" | "administrator";
+  userRole: "teacher" | "student";
 }
 
 export default function CourseEvaluations({ courseId, userRole }: CourseEvaluationsProps) {

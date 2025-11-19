@@ -54,7 +54,7 @@ const CreateCourse = () => {
           title,
           description,
           code: code.toUpperCase(),
-          created_by: user.id,
+          teacher_id: user.id,
         })
         .select()
         .single();
@@ -63,10 +63,10 @@ const CreateCourse = () => {
 
       toast({
         title: "¡Curso creado!",
-        description: "Ahora puedes agregar docentes y estudiantes al curso",
+        description: "El curso ha sido creado exitosamente",
       });
 
-      navigate(`/courses/${data.id}?tab=people`);
+      navigate(`/courses/${data.id}`);
     } catch (error: any) {
       console.error("Error creating course:", error);
       toast({

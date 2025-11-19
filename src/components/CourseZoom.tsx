@@ -11,7 +11,7 @@ import { format } from "date-fns";
 
 interface CourseZoomProps {
   courseId: string;
-  userRole: "teacher" | "student" | "administrator";
+  userRole: "teacher" | "student";
 }
 
 interface ZoomMeeting {

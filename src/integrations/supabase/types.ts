@@ -78,66 +78,31 @@ export type Database = {
           },
         ]
       }
-      course_teachers: {
-        Row: {
-          assigned_at: string | null
-          assigned_by: string
-          course_id: string
-          id: string
-          teacher_id: string
-        }
-        Insert: {
-          assigned_at?: string | null
-          assigned_by: string
-          course_id: string
-          id?: string
-          teacher_id: string
-        }
-        Update: {
-          assigned_at?: string | null
-          assigned_by?: string
-          course_id?: string
-          id?: string
-          teacher_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "course_teachers_course_id_fkey"
-            columns: ["course_id"]
-            isOneToOne: false
-            referencedRelation: "courses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       courses: {
         Row: {
           code: string
           created_at: string
-          created_by: string | null
           description: string | null
           id: string
-          teacher_id: string | null
+          teacher_id: string
           title: string
           updated_at: string
         }
         Insert: {
           code: string
           created_at?: string
-          created_by?: string | null
           description?: string | null
           id?: string
-          teacher_id?: string | null
+          teacher_id: string
           title: string
           updated_at?: string
         }
         Update: {
           code?: string
           created_at?: string
-          created_by?: string | null
           description?: string | null
           id?: string
-          teacher_id?: string | null
+          teacher_id?: string
           title?: string
           updated_at?: string
         }
@@ -463,28 +428,22 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
-          email: string | null
           full_name: string
           id: string
-          professional_school: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
-          email?: string | null
           full_name: string
           id: string
-          professional_school?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
-          email?: string | null
           full_name?: string
           id?: string
-          professional_school?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -665,7 +624,7 @@ export type Database = {
         | "file_upload"
         | "true_false"
         | "matching"
-      user_role: "student" | "teacher" | "administrator"
+      user_role: "student" | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -801,7 +760,7 @@ export const Constants = {
         "true_false",
         "matching",
       ],
-      user_role: ["student", "teacher", "administrator"],
+      user_role: ["student", "teacher"],
     },
   },
 } as const

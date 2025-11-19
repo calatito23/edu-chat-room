@@ -24,7 +24,7 @@ import { MessageSquare, Send, User, Trash2 } from "lucide-react";
  */
 interface CourseStreamProps {
   courseId: string;
-  userRole: "student" | "teacher" | "administrator";
+  userRole: "student" | "teacher";
 }
 
 const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
