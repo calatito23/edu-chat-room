@@ -36,7 +36,7 @@ interface Question {
 
 interface CourseEvaluationsProps {
   courseId: string;
-  userRole: "teacher" | "student";
+  userRole: "teacher" | "student" | "administrator";
 }
 
 export default function CourseEvaluations({ courseId, userRole }: CourseEvaluationsProps) {
@@ -699,7 +699,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
 
   return (
     <div className="space-y-4">
-      {userRole === "teacher" && (
+      {(userRole === "teacher" || userRole === "administrator") && (
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) {
@@ -994,9 +994,9 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
             return (
               <Card 
                 key={evaluation.id} 
-                className={`hover:shadow-md transition-shadow ${userRole === "teacher" ? "cursor-pointer" : ""}`}
+                className={`hover:shadow-md transition-shadow ${(userRole === "teacher" || userRole === "administrator") ? "cursor-pointer" : ""}`}
                 onClick={() => {
-                  if (userRole === "teacher") {
+                  if (userRole === "teacher" || userRole === "administrator") {
                     navigate(`/courses/${courseId}/evaluations/${evaluation.id}/stats`);
                   }
                 }}
@@ -1011,10 +1011,10 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                     </div>
                     <div className="flex items-center gap-2">
                       <div className={`flex items-center gap-1 ${status.color}`}>
-                        <StatusIcon className="h-4 w-4" />
+                      <StatusIcon className="h-4 w-4" />
                         <span className="text-sm font-medium">{status.label}</span>
                       </div>
-                      {userRole === "teacher" && (
+                      {(userRole === "teacher" || userRole === "administrator") && (
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"

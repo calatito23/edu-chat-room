@@ -11,7 +11,7 @@ import { format } from "date-fns";
 
 interface CourseZoomProps {
   courseId: string;
-  userRole: "teacher" | "student";
+  userRole: "teacher" | "student" | "administrator";
 }
 
 interface ZoomMeeting {
@@ -197,7 +197,7 @@ const CourseZoom = ({ courseId, userRole }: CourseZoomProps) => {
   return (
     <div className="space-y-6">
       {/* Create Meeting Form - Only for teachers */}
-      {userRole === "teacher" && (
+      {(userRole === "teacher" || userRole === "administrator") && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -344,7 +344,7 @@ const CourseZoom = ({ courseId, userRole }: CourseZoomProps) => {
                         >
                           Copiar
                         </Button>
-                        {userRole === "teacher" && (
+                        {(userRole === "teacher" || userRole === "administrator") && (
                           <>
                             <Button
                               size="sm"
@@ -377,7 +377,7 @@ const CourseZoom = ({ courseId, userRole }: CourseZoomProps) => {
                       </div>
                     </div>
 
-                    {userRole === "teacher" && (
+                    {(userRole === "teacher" || userRole === "administrator") && (
                       <Button
                         size="icon"
                         variant="ghost"

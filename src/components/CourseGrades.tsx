@@ -10,7 +10,7 @@ import { Settings } from "lucide-react";
 
 interface CourseGradesProps {
   courseId: string;
-  userRole: "teacher" | "student";
+  userRole: "teacher" | "student" | "administrator";
 }
 
 interface Student {
@@ -64,7 +64,7 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
       if (!user) return;
       setCurrentUserId(user.id);
 
-      if (userRole === "teacher") {
+      if (userRole === "teacher" || userRole === "administrator") {
         // Cargar todos los estudiantes inscritos (vista de profesor)
         const { data: enrollmentsData, error: enrollmentsError } = await supabase
           .from("course_enrollments")
@@ -211,16 +211,16 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
         <div className="flex items-start justify-between">
           <div>
             <CardTitle>
-              {userRole === "teacher" ? "Registro de Notas" : "Mis Notas"}
+              {(userRole === "teacher" || userRole === "administrator") ? "Registro de Notas" : "Mis Notas"}
             </CardTitle>
             <CardDescription>
-              {userRole === "teacher" 
+              {(userRole === "teacher" || userRole === "administrator")
                 ? "Notas de todos los estudiantes en las evaluaciones del curso"
                 : "Tus calificaciones y promedio final del curso"
               }
             </CardDescription>
           </div>
-          {userRole === "teacher" && (
+          {(userRole === "teacher" || userRole === "administrator") && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">

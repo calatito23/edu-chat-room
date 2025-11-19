@@ -24,7 +24,7 @@ import { MessageSquare, Send, User, Trash2 } from "lucide-react";
  */
 interface CourseStreamProps {
   courseId: string;
-  userRole: "student" | "teacher";
+  userRole: "student" | "teacher" | "administrator";
 }
 
 const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
@@ -234,7 +234,7 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
 
   return (
     <div className="space-y-6">
-      {userRole === "teacher" && (
+      {(userRole === "teacher" || userRole === "administrator") && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -309,7 +309,7 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
                     {new Date(post.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                {userRole === "teacher" && (
+                {(userRole === "teacher" || userRole === "administrator") && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -345,7 +345,7 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
                             {new Date(comment.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        {userRole === "teacher" && (
+                        {(userRole === "teacher" || userRole === "administrator") && (
                           <Button
                             variant="ghost"
                             size="icon"
