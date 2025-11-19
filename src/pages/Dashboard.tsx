@@ -214,14 +214,14 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">
-            {userRole === "teacher" ? "Mis Cursos" : "Cursos Inscritos"}
+            {(userRole === "teacher" || userRole === "administrator") ? "Mis Cursos" : "Cursos Inscritos"}
           </h2>
-          {userRole === "teacher" ? (
+          {userRole === "administrator" && (
             <Button onClick={() => navigate("/courses/create")}>
               <Plus className="h-4 w-4 mr-2" />
               Crear Curso
             </Button>
-          ) : null}
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
