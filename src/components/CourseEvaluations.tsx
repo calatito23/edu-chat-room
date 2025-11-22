@@ -1078,7 +1078,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                       <div>Inicio: {format(new Date(evaluation.start_date), "dd/MM/yyyy HH:mm")}</div>
                       <div>Fin: {format(new Date(evaluation.end_date), "dd/MM/yyyy HH:mm")}</div>
                     </div>
-                    {userRole === "student" && status.label === "Disponible" && !userSubmissions[evaluation.id] && (
+                    {userRole === "student" && !userSubmissions[evaluation.id] && (
                       <Button onClick={() => handleTakeEvaluation(evaluation)}>
                         Tomar Evaluación
                       </Button>
