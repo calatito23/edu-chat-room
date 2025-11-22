@@ -430,8 +430,38 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     }
   };
 
-  const handleEditEvaluation = (evaluation: Evaluation) => {
+  const handleEditEvaluation = async (evaluation: Evaluation) => {
     setEditingEvaluation(evaluation);
+    
+    // Cargar las preguntas existentes de la evaluación
+    try {
+      const { data: questionsData, error: questionsError } = await supabase
+        .from("evaluation_questions")
+        .select("*")
+        .eq("evaluation_id", evaluation.id)
+        .order("order_number");
+
+      if (questionsError) throw questionsError;
+
+      const loadedQuestions = questionsData?.map(q => ({
+        id: q.id,
+        question_text: q.question_text,
+        question_type: q.question_type,
+        order_number: q.order_number,
+        options: Array.isArray(q.options) ? q.options as string[] : [],
+        correct_answer: q.correct_answer,
+        points: q.points || 1,
+        images: [],
+      })) || [];
+      
+      setQuestions(loadedQuestions);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error al cargar preguntas",
+        description: error.message,
+      });
+    }
     
     // Convertir las fechas UTC a formato local para el input datetime-local
     const startDate = new Date(evaluation.start_date);
@@ -1054,7 +1084,12 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                       </Button>
                     )}
                     {userRole === "student" && userSubmissions[evaluation.id] && (
-                      <span className="text-sm text-muted-foreground">Evaluación completada</span>
+                      <Button 
+                        variant="outline"
+                        onClick={() => navigate(`/courses/${courseId}/evaluations/${evaluation.id}/view`)}
+                      >
+                        Ver mis respuestas
+                      </Button>
                     )}
                   </div>
                 </CardContent>

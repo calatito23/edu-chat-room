@@ -11,6 +11,7 @@ import JoinCourse from "./pages/JoinCourse";
 import CourseView from "./pages/CourseView";
 import Chat from "./pages/Chat";
 import EvaluationStats from "./pages/EvaluationStats";
+import StudentEvaluationView from "./pages/StudentEvaluationView";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/courses/join" element={<JoinCourse />} />
           <Route path="/courses/:courseId" element={<CourseView />} />
           <Route path="/courses/:courseId/evaluations/:evaluationId/stats" element={<EvaluationStats />} />
+          <Route path="/courses/:courseId/evaluations/:evaluationId/view" element={<StudentEvaluationView />} />
           <Route path="/chat" element={<Chat />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
