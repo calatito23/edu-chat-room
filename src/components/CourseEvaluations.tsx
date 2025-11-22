@@ -309,11 +309,11 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     setQuestions(redistributedQuestions);
     setShowPointsAlert(false);
     
-    // Proceder con el guardado
+    // Proceder con el guardado usando las preguntas redistribuidas directamente
     if (pendingSave === "create") {
-      executeCreateEvaluation();
+      executeCreateEvaluation(redistributedQuestions);
     } else if (pendingSave === "update") {
-      executeUpdateEvaluation();
+      executeUpdateEvaluation(redistributedQuestions);
     }
     setPendingSave(null);
   };
@@ -322,7 +322,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     validateAndProceed("create");
   };
 
-  const executeCreateEvaluation = async () => {
+  const executeCreateEvaluation = async (questionsToUse?: Question[]) => {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("No autenticado");
@@ -346,7 +346,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
 
       if (evalError) throw evalError;
 
-      const questionsToInsert = questions.map((q) => ({
+      const questionsToInsert = (questionsToUse || questions).map((q) => ({
         evaluation_id: evalData.id,
         question_text: q.question_text,
         question_type: q.question_type as "short_answer" | "multiple_choice" | "multiple_select" | "file_upload" | "true_false" | "matching",
@@ -392,7 +392,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     validateAndProceed("update");
   };
 
-  const executeUpdateEvaluation = async () => {
+  const executeUpdateEvaluation = async (questionsToUse?: Question[]) => {
     if (!editingEvaluation) return;
 
     try {
