@@ -31,6 +31,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "login");
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showUpdatePassword, setShowUpdatePassword] = useState(false);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -44,17 +45,28 @@ const Auth = () => {
 
   // Reset password state
   const [resetEmail, setResetEmail] = useState("");
+  
+  // Update password state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Check if user is already logged in
+  // Check if user is already logged in or coming from password reset
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      
+      // Check if this is a password recovery redirect
+      const isRecovery = searchParams.get("type") === "recovery";
+      
+      if (isRecovery) {
+        // User is coming from password recovery email
+        setShowUpdatePassword(true);
+      } else if (session) {
         navigate("/dashboard");
       }
     };
     checkUser();
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +139,7 @@ const Auth = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/auth?type=recovery`,
       });
 
       if (error) throw error;
@@ -138,10 +150,61 @@ const Auth = () => {
       });
 
       setResetEmail("");
+      setShowResetPassword(false);
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "No se pudo enviar el email",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Las contraseñas no coinciden",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "¡Contraseña actualizada!",
+        description: "Tu contraseña ha sido cambiada exitosamente",
+      });
+
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowUpdatePassword(false);
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo actualizar la contraseña",
         variant: "destructive",
       });
     } finally {
@@ -178,7 +241,48 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!showResetPassword ? (
+          {showUpdatePassword ? (
+            <div className="space-y-3">
+              <div className="mb-2">
+                <h3 className="text-base font-semibold">Nueva Contraseña</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ingresa tu nueva contraseña
+                </p>
+              </div>
+              <form onSubmit={handleUpdatePassword} className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="new-password" className="text-sm">Nueva Contraseña</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirm-password" className="text-sm">Confirmar Contraseña</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    className="h-9"
+                  />
+                </div>
+                <Button type="submit" className="w-full h-9" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Cambiar Contraseña
+                </Button>
+              </form>
+            </div>
+          ) : !showResetPassword ? (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login">Ingresar</TabsTrigger>
