@@ -123,7 +123,7 @@ const Dashboard = () => {
           new Map(allCourses.map(course => [course.id, course])).values()
         );
 
-        // Get enrollment counts
+        // Get enrollment counts and teacher profiles
         const coursesWithDetails = await Promise.all(
           uniqueCourses.map(async (course) => {
             const { count } = await supabase
@@ -131,9 +131,21 @@ const Dashboard = () => {
               .select("id", { count: "exact", head: true })
               .eq("course_id", course.id);
 
+            // Get teacher profile if teacher_id exists
+            let teacherProfile = null;
+            if (course.teacher_id) {
+              const { data: profileData } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", course.teacher_id)
+                .single();
+              teacherProfile = profileData;
+            }
+
             return { 
               ...course,
-              enrollmentCount: count || 0 
+              enrollmentCount: count || 0,
+              profiles: teacherProfile
             };
           })
         );
@@ -281,10 +293,9 @@ const Dashboard = () => {
                   </p>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      {userRole === "teacher" ? "Profesor:" : "Impartido por:"}{" "}
-                      {course.profiles?.full_name}
+                      Impartido por: {course.profiles?.full_name || "Sin asignar"}
                     </span>
-                    {userRole === "teacher" && (
+                    {(userRole === "teacher" || userRole === "administrator") && (
                       <span className="flex items-center gap-1 text-primary">
                         <Users className="h-4 w-4" />
                         {course.enrollmentCount}
