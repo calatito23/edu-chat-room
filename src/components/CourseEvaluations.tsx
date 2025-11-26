@@ -655,8 +655,17 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
 
       // Insertar respuestas con calificación
       const answersToInsert = evaluationQuestions.map((q) => {
-        const studentAnswer = studentAnswers[q.id!] || null;
+        let studentAnswer = studentAnswers[q.id!] || null;
         const correctAnswer = q.correct_answer;
+        
+        // Si la respuesta es un string JSON (para file_upload), parsearlo a objeto
+        if (studentAnswer && typeof studentAnswer === 'string' && studentAnswer.startsWith('{')) {
+          try {
+            studentAnswer = JSON.parse(studentAnswer);
+          } catch (e) {
+            // Si falla el parse, dejar el valor como está
+          }
+        }
         
         // Si necesita revisión manual, no calificar
         if (needsManualReview(q)) {
