@@ -207,9 +207,27 @@ export default function StudentEvaluationView() {
                     <CardContent className="space-y-4">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">Tu respuesta:</p>
-                        <p className="text-sm mt-1">
-                          {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer || "Sin respuesta"}
-                        </p>
+                        {question.question_type === "file_upload" && answer.answer ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="mt-2"
+                          >
+                            <a
+                              href={answer.answer as string}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                            >
+                              Descargar archivo
+                            </a>
+                          </Button>
+                        ) : (
+                          <p className="text-sm mt-1">
+                            {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer || "Sin respuesta"}
+                          </p>
+                        )}
                       </div>
                       
                       {question.question_type !== "short_answer" && 
