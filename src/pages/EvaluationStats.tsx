@@ -146,29 +146,30 @@ export default function EvaluationStats() {
 
     setSaving(true);
     try {
+      // Calcular puntaje total primero
+      let totalEarned = 0;
+      let totalPossible = 0;
+
       // Actualizar cada respuesta con los puntos editados
-      for (const [answerId, points] of Object.entries(editedPoints)) {
-        const answer = viewingAnswers.answers.find(a => a.id === answerId);
-        if (!answer) continue;
+      for (const answer of viewingAnswers.answers) {
+        const points = editedPoints[answer.id] !== undefined ? editedPoints[answer.id] : (answer.points_earned || 0);
+        const maxPoints = answer.evaluation_questions.points || 0;
+        
+        totalEarned += points;
+        totalPossible += maxPoints;
 
         const { error } = await supabase
           .from("evaluation_answers")
           .update({ 
             points_earned: points,
-            is_correct: points === answer.evaluation_questions.points
+            is_correct: points === maxPoints
           })
-          .eq("id", answerId);
+          .eq("id", answer.id);
 
         if (error) throw error;
       }
 
-      // Recalcular puntaje total
-      const totalEarned = Object.values(editedPoints).reduce((sum, points) => sum + points, 0);
-      const totalPossible = viewingAnswers.answers.reduce(
-        (sum, answer) => sum + answer.evaluation_questions.points, 
-        0
-      );
-
+      // Actualizar el submission con el puntaje total
       const { error: submissionError } = await supabase
         .from("evaluation_submissions")
         .update({
@@ -185,7 +186,7 @@ export default function EvaluationStats() {
       });
 
       setViewingAnswers(null);
-      loadData();
+      await loadData();
     } catch (error: any) {
       toast({
         variant: "destructive",
