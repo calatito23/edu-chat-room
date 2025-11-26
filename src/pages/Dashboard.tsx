@@ -4,9 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, LogOut, MessageSquare, BookOpen, Plus, Users } from "lucide-react";
+import { GraduationCap, LogOut, MessageSquare, BookOpen, Plus, Users, Trash2 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { Notifications } from "@/components/Notifications";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 /**
  * Dashboard principal del aula virtual
@@ -31,6 +41,7 @@ const Dashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     checkUser();
@@ -194,6 +205,36 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
+  const handleDeleteCourse = async (courseId: string) => {
+    try {
+      const { error } = await supabase
+        .from("courses")
+        .delete()
+        .eq("id", courseId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Curso eliminado",
+        description: "El curso ha sido eliminado exitosamente",
+      });
+
+      // Reload courses
+      if (user && userRole) {
+        await loadCourses(user.id, userRole);
+      }
+    } catch (error: any) {
+      console.error("Error deleting course:", error);
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el curso",
+        variant: "destructive",
+      });
+    } finally {
+      setCourseToDelete(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -278,36 +319,73 @@ const Dashboard = () => {
             courses.map((course) => (
               <Card
                 key={course.id}
-                className="hover:shadow-[var(--shadow-elevated)] transition-all cursor-pointer"
-                onClick={() => navigate(`/courses/${course.id}`)}
+                className="hover:shadow-[var(--shadow-elevated)] transition-all relative"
               >
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    {course.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                    {course.description || "Sin descripción"}
-                  </p>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Impartido por: {course.profiles?.full_name || "Sin asignar"}
-                    </span>
-                    {(userRole === "teacher" || userRole === "administrator") && (
-                      <span className="flex items-center gap-1 text-primary">
-                        <Users className="h-4 w-4" />
-                        {course.enrollmentCount}
+                <div onClick={() => navigate(`/courses/${course.id}`)} className="cursor-pointer">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-primary" />
+                      {course.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                      {course.description || "Sin descripción"}
+                    </p>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Impartido por: {course.profiles?.full_name || "Sin asignar"}
                       </span>
-                    )}
+                      {(userRole === "teacher" || userRole === "administrator") && (
+                        <span className="flex items-center gap-1 text-primary">
+                          <Users className="h-4 w-4" />
+                          {course.enrollmentCount}
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </div>
+                {userRole === "administrator" && (
+                  <div className="absolute top-4 right-4">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCourseToDelete(course.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                </CardContent>
+                )}
               </Card>
             ))
           )}
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!courseToDelete} onOpenChange={() => setCourseToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El curso y todos sus datos asociados serán eliminados permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => courseToDelete && handleDeleteCourse(courseToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
