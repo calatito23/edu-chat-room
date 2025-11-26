@@ -259,7 +259,7 @@ const Dashboard = () => {
               <div>
                 <h1 className="text-xl font-bold">Aula Virtual</h1>
                 <p className="text-sm text-muted-foreground">
-                  {profile?.full_name} - {userRole === "teacher" ? "Profesor" : "Alumno"}
+                  {profile?.full_name} - {userRole === "administrator" ? "Administrador" : userRole === "teacher" ? "Profesor" : "Alumno"}
                 </p>
               </div>
             </div>
