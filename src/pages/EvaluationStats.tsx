@@ -180,6 +180,13 @@ export default function EvaluationStats() {
 
       if (submissionError) throw submissionError;
 
+      // Actualizar la lista local de entregas inmediatamente
+      setSubmissions(prev => prev.map(sub =>
+        sub.id === viewingAnswers.submission.id
+          ? { ...sub, score: totalEarned, total_points: totalPossible }
+          : sub
+      ));
+
       toast({
         title: "Éxito",
         description: "Calificaciones guardadas correctamente",
