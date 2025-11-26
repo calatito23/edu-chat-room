@@ -142,13 +142,24 @@ const Dashboard = () => {
               .select("id", { count: "exact", head: true })
               .eq("course_id", course.id);
 
-            // Get teacher profile if teacher_id exists
+            // Get teacher profile from course_teachers first, fallback to teacher_id
             let teacherProfile = null;
-            if (course.teacher_id) {
+            
+            // First try to get from course_teachers
+            const { data: assignedTeacher } = await supabase
+              .from("course_teachers")
+              .select("teacher_id")
+              .eq("course_id", course.id)
+              .limit(1)
+              .single();
+            
+            let teacherId = assignedTeacher?.teacher_id || course.teacher_id;
+            
+            if (teacherId) {
               const { data: profileData } = await supabase
                 .from("profiles")
                 .select("full_name")
-                .eq("id", course.teacher_id)
+                .eq("id", teacherId)
                 .single();
               teacherProfile = profileData;
             }
