@@ -887,7 +887,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                             <SelectItem value="multiple_select">Selección múltiple</SelectItem>
                             <SelectItem value="file_upload">Subir archivos</SelectItem>
                             <SelectItem value="true_false">Verdadero/Falso</SelectItem>
-                            <SelectItem value="matching">Relacionar</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
