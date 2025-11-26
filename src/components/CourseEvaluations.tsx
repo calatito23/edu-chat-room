@@ -1205,15 +1205,69 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                   )}
 
                   {question.question_type === "file_upload" && (
-                    <Input
-                      type="file"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setStudentAnswers({ ...studentAnswers, [question.id!]: file.name });
-                        }
-                      }}
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        type="file"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const { data: user } = await supabase.auth.getUser();
+                              if (!user.user) throw new Error("No autenticado");
+
+                              // Subir archivo a Supabase Storage
+                              const fileExt = file.name.split('.').pop();
+                              const fileName = `${Math.random()}.${fileExt}`;
+                              const filePath = `evaluations/${takingEvaluation?.id}/${user.user.id}/${fileName}`;
+
+                              const { error: uploadError } = await supabase.storage
+                                .from('course-files')
+                                .upload(filePath, file);
+
+                              if (uploadError) throw uploadError;
+
+                              // Obtener URL pública del archivo
+                              const { data: { publicUrl } } = supabase.storage
+                                .from('course-files')
+                                .getPublicUrl(filePath);
+
+                              // Guardar URL y nombre del archivo
+                              setStudentAnswers({ 
+                                ...studentAnswers, 
+                                [question.id!]: JSON.stringify({
+                                  fileName: file.name,
+                                  filePath: filePath,
+                                  fileUrl: publicUrl
+                                })
+                              });
+
+                              toast({
+                                title: "Éxito",
+                                description: "Archivo subido correctamente",
+                              });
+                            } catch (error: any) {
+                              toast({
+                                variant: "destructive",
+                                title: "Error",
+                                description: error.message,
+                              });
+                            }
+                          }
+                        }}
+                      />
+                      {studentAnswers[question.id!] && (
+                        <p className="text-sm text-muted-foreground">
+                          Archivo: {(() => {
+                            try {
+                              const fileData = JSON.parse(studentAnswers[question.id!]);
+                              return fileData.fileName;
+                            } catch {
+                              return studentAnswers[question.id!];
+                            }
+                          })()}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {question.question_type === "matching" && (

@@ -207,9 +207,31 @@ export default function StudentEvaluationView() {
                     <CardContent className="space-y-4">
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">Tu respuesta:</p>
-                        <p className="text-sm mt-1">
-                          {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer || "Sin respuesta"}
-                        </p>
+                        {question.question_type === "file_upload" ? (
+                          (() => {
+                            try {
+                              const fileData = JSON.parse(answer.answer);
+                              return (
+                                <div className="flex items-center gap-2 mt-1">
+                                  <a
+                                    href={fileData.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    📎 {fileData.fileName}
+                                  </a>
+                                </div>
+                              );
+                            } catch {
+                              return <p className="text-sm mt-1">{answer.answer || "Sin respuesta"}</p>;
+                            }
+                          })()
+                        ) : (
+                          <p className="text-sm mt-1">
+                            {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer || "Sin respuesta"}
+                          </p>
+                        )}
                       </div>
                       
                       {question.question_type !== "short_answer" && 
