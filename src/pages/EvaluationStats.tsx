@@ -383,9 +383,27 @@ export default function EvaluationStats() {
                   <CardContent className="space-y-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Respuesta del estudiante:</p>
-                      <p className="text-sm">
-                        {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer || "Sin respuesta"}
-                      </p>
+                      {question.question_type === "file_upload" && answer.answer ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="mt-2"
+                        >
+                          <a
+                            href={answer.answer as string}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                          >
+                            Descargar archivo
+                          </a>
+                        </Button>
+                      ) : (
+                        <p className="text-sm">
+                          {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer || "Sin respuesta"}
+                        </p>
+                      )}
                     </div>
                     {!needsReview && (
                       <div>
