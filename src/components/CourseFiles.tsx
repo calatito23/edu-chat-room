@@ -347,7 +347,7 @@ const CourseFiles = ({ courseId, userRole, teacherId, initialWeek }: CourseFiles
                                 >
                                   <Download className="h-4 w-4" />
                                 </Button>
-                                {(userRole === "teacher" || userRole === "administrator") && currentUserId === teacherId && (
+                                {(userRole === "administrator" || (userRole === "teacher" && currentUserId === file.uploader_id)) && (
                                   <Button
                                     variant="outline"
                                     size="sm"
