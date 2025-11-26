@@ -383,38 +383,9 @@ export default function EvaluationStats() {
                   <CardContent className="space-y-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Respuesta del estudiante:</p>
-                      {question.question_type === "file_upload" ? (
-                        (() => {
-                          try {
-                            const fileData = JSON.parse(answer.answer);
-                            return (
-                              <div className="flex items-center gap-2 mt-2">
-                                <a
-                                  href={fileData.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                                >
-                                  📎 {fileData.fileName}
-                                </a>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(fileData.fileUrl, '_blank')}
-                                >
-                                  Descargar
-                                </Button>
-                              </div>
-                            );
-                          } catch {
-                            return <p className="text-sm">{answer.answer || "Sin respuesta"}</p>;
-                          }
-                        })()
-                      ) : (
-                        <p className="text-sm">
-                          {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer || "Sin respuesta"}
-                        </p>
-                      )}
+                      <p className="text-sm">
+                        {Array.isArray(answer.answer) ? answer.answer.join(", ") : answer.answer || "Sin respuesta"}
+                      </p>
                     </div>
                     {!needsReview && (
                       <div>
