@@ -186,11 +186,26 @@ const Dashboard = () => {
         // Get teacher profiles for each course
         const coursesWithProfiles = await Promise.all(
           (enrollmentsData || []).map(async (enrollment: any) => {
-            const { data: teacherProfile } = await supabase
-              .from("profiles")
-              .select("full_name")
-              .eq("id", enrollment.courses.teacher_id)
+            let teacherProfile = null;
+            
+            // First try to get from course_teachers
+            const { data: assignedTeacher } = await supabase
+              .from("course_teachers")
+              .select("teacher_id")
+              .eq("course_id", enrollment.courses.id)
+              .limit(1)
               .single();
+            
+            let teacherId = assignedTeacher?.teacher_id || enrollment.courses.teacher_id;
+            
+            if (teacherId) {
+              const { data: profileData } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("id", teacherId)
+                .single();
+              teacherProfile = profileData;
+            }
 
             return {
               ...enrollment.courses,
