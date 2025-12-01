@@ -209,7 +209,7 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
       }
     });
 
-    if (totalWeightUsed === 0) return null;
+    if (totalWeightUsed === 0) return 0;
     return totalWeightedScore;
   };
 
@@ -359,16 +359,6 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <p className="text-muted-foreground">No hay estudiantes inscritos en este curso</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (evaluations.length === 0 && customColumns.length === 0) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <p className="text-muted-foreground">No hay evaluaciones ni columnas de notas creadas</p>
         </CardContent>
       </Card>
     );
@@ -569,15 +559,9 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
                       );
                     })}
                     <td className="p-3 text-center bg-primary/5">
-                      {finalAverage !== null ? (
-                        <span className="font-bold text-lg">
-                          {finalAverage.toFixed(2)}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-sm italic">
-                          -
-                        </span>
-                      )}
+                      <span className="font-bold text-lg">
+                        {finalAverage.toFixed(2)}
+                      </span>
                     </td>
                   </tr>
                 );
