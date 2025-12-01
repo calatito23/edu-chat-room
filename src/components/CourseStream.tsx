@@ -365,7 +365,7 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
                           </div>
                           <p className="text-sm mt-1">{comment.content}</p>
                           <span className="text-xs text-muted-foreground">
-                            {new Date(comment.created_at).toLocaleDateString()}
+                            {new Date(comment.created_at).toLocaleDateString()} • {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
                         {(userRole === "teacher" || userRole === "administrator") && (
