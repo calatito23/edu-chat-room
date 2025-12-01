@@ -143,7 +143,12 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       return;
     }
 
-    setQuestions([...questions, { ...currentQuestion, order_number: questions.length + 1 }]);
+    console.log("➕ Agregando pregunta con imágenes:", currentQuestion);
+    
+    const newQuestion = { ...currentQuestion, order_number: questions.length + 1 };
+    console.log("📋 Pregunta preparada:", newQuestion);
+    
+    setQuestions([...questions, newQuestion]);
     setCurrentQuestion({
       question_text: "",
       question_type: "short_answer",
@@ -354,10 +359,14 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
         options: q.options ? q.options : null,
         correct_answer: q.correct_answer,
         points: q.points,
-        images: q.images || null,
+        images: q.images && q.images.length > 0 ? q.images : null,
       }));
 
-      console.log("📝 Guardando preguntas con imágenes:", questionsToInsert);
+      console.log("📝 Preguntas a insertar:", questionsToInsert.map(q => ({ 
+        question_text: q.question_text, 
+        has_images: !!q.images,
+        images_count: q.images?.length || 0 
+      })));
 
       const { error: questionsError } = await supabase
         .from("evaluation_questions")
