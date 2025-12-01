@@ -159,33 +159,25 @@ export default function EvaluationStats() {
         totalEarned += points;
         totalPossible += maxPoints;
 
-        const { data: updatedAnswer, error } = await supabase
+        const { error } = await supabase
           .from("evaluation_answers")
           .update({ 
             points_earned: points,
             is_correct: points === maxPoints
           })
-          .eq("id", answer.id)
-          .select("id, points_earned, is_correct")
-          .maybeSingle();
-
-        console.log("Updated answer", { answerId: answer.id, points, maxPoints, updatedAnswer, error });
+          .eq("id", answer.id);
 
         if (error) throw error;
       }
 
       // Actualizar el submission con el puntaje total
-      const { data: updatedSubmission, error: submissionError } = await supabase
+      const { error: submissionError } = await supabase
         .from("evaluation_submissions")
         .update({
           score: totalEarned,
           total_points: totalPossible,
         })
-        .eq("id", viewingAnswers.submission.id)
-        .select("id, score, total_points")
-        .maybeSingle();
-
-      console.log("Updated submission", { submissionId: viewingAnswers.submission.id, totalEarned, totalPossible, updatedSubmission, submissionError });
+        .eq("id", viewingAnswers.submission.id);
 
       if (submissionError) throw submissionError;
 
