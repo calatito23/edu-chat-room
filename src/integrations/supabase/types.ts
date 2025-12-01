@@ -143,6 +143,76 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_grade_columns: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          name: string
+          order_number: number
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          name: string
+          order_number?: number
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          order_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_grade_columns_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_grades: {
+        Row: {
+          column_id: string
+          created_at: string
+          id: string
+          max_score: number
+          score: number | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          column_id: string
+          created_at?: string
+          id?: string
+          max_score?: number
+          score?: number | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          column_id?: string
+          created_at?: string
+          id?: string
+          max_score?: number
+          score?: number | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_grades_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "custom_grade_columns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evaluation_answers: {
         Row: {
           answer: Json

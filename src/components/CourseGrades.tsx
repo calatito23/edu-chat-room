@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Settings } from "lucide-react";
+import { Settings, Plus, Trash2 } from "lucide-react";
 
 interface CourseGradesProps {
   courseId: string;
@@ -30,14 +30,31 @@ interface Grade {
   total_points: number;
 }
 
+interface CustomGradeColumn {
+  id: string;
+  name: string;
+  order_number: number;
+}
+
+interface CustomGrade {
+  column_id: string;
+  student_id: string;
+  score: number | null;
+  max_score: number;
+}
+
 export default function CourseGrades({ courseId, userRole }: CourseGradesProps) {
   const [students, setStudents] = useState<Student[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
+  const [customColumns, setCustomColumns] = useState<CustomGradeColumn[]>([]);
+  const [customGrades, setCustomGrades] = useState<CustomGrade[]>([]);
   const [loading, setLoading] = useState(true);
   const [weights, setWeights] = useState<Record<string, number>>({});
   const [tempWeights, setTempWeights] = useState<Record<string, number>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [addColumnDialogOpen, setAddColumnDialogOpen] = useState(false);
+  const [newColumnName, setNewColumnName] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -46,16 +63,20 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
   }, [courseId]);
 
   useEffect(() => {
-    if (evaluations.length > 0) {
-      const defaultWeight = 1 / evaluations.length;
+    const totalItems = evaluations.length + customColumns.length;
+    if (totalItems > 0) {
+      const defaultWeight = 1 / totalItems;
       const initialWeights: Record<string, number> = {};
       evaluations.forEach(evaluation => {
         initialWeights[evaluation.id] = defaultWeight;
       });
+      customColumns.forEach(column => {
+        initialWeights[`custom_${column.id}`] = defaultWeight;
+      });
       setWeights(initialWeights);
       setTempWeights(initialWeights);
     }
-  }, [evaluations]);
+  }, [evaluations, customColumns]);
 
   const loadGradesData = async () => {
     try {
@@ -121,6 +142,33 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
 
       if (gradesError) throw gradesError;
       setGrades(gradesData || []);
+
+      // Cargar columnas personalizadas
+      const { data: customColumnsData, error: customColumnsError } = await supabase
+        .from("custom_grade_columns")
+        .select("id, name, order_number")
+        .eq("course_id", courseId)
+        .order("order_number");
+
+      if (customColumnsError) throw customColumnsError;
+      setCustomColumns(customColumnsData || []);
+
+      // Cargar calificaciones personalizadas
+      if (customColumnsData && customColumnsData.length > 0) {
+        const customGradesQuery = supabase
+          .from("custom_grades")
+          .select("column_id, student_id, score, max_score")
+          .in("column_id", customColumnsData.map(c => c.id));
+
+        if (userRole === "student") {
+          customGradesQuery.eq("student_id", user.id);
+        }
+
+        const { data: customGradesData, error: customGradesError } = await customGradesQuery;
+
+        if (customGradesError) throw customGradesError;
+        setCustomGrades(customGradesData || []);
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -136,6 +184,10 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
     return grades.find(g => g.student_id === studentId && g.evaluation_id === evaluationId);
   };
 
+  const getCustomGrade = (studentId: string, columnId: string) => {
+    return customGrades.find(g => g.student_id === studentId && g.column_id === columnId);
+  };
+
   const calculateFinalAverage = (studentId: string) => {
     let totalWeightedScore = 0;
     let totalWeightUsed = 0;
@@ -143,9 +195,17 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
     evaluations.forEach((evaluation) => {
       const grade = getGrade(studentId, evaluation.id);
       if (grade && grade.score !== null) {
-        // Promedio final = suma de (score * peso)
         totalWeightedScore += grade.score * (weights[evaluation.id] || 0);
         totalWeightUsed += weights[evaluation.id] || 0;
+      }
+    });
+
+    customColumns.forEach((column) => {
+      const customGrade = getCustomGrade(studentId, column.id);
+      if (customGrade && customGrade.score !== null && customGrade.max_score) {
+        const normalizedScore = (customGrade.score / customGrade.max_score) * 20;
+        totalWeightedScore += normalizedScore * (weights[`custom_${column.id}`] || 0);
+        totalWeightUsed += weights[`custom_${column.id}`] || 0;
       }
     });
 
@@ -181,6 +241,115 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
     }
   };
 
+  const handleAddCustomColumn = async () => {
+    if (!newColumnName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "El nombre de la columna no puede estar vacío",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("custom_grade_columns")
+        .insert({
+          course_id: courseId,
+          name: newColumnName,
+          order_number: customColumns.length,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCustomColumns([...customColumns, data]);
+      setNewColumnName("");
+      setAddColumnDialogOpen(false);
+      toast({
+        title: "Éxito",
+        description: "Columna de nota agregada correctamente",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleDeleteCustomColumn = async (columnId: string) => {
+    try {
+      const { error } = await supabase
+        .from("custom_grade_columns")
+        .delete()
+        .eq("id", columnId);
+
+      if (error) throw error;
+
+      setCustomColumns(customColumns.filter(c => c.id !== columnId));
+      setCustomGrades(customGrades.filter(g => g.column_id !== columnId));
+      toast({
+        title: "Éxito",
+        description: "Columna eliminada correctamente",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleCustomGradeChange = async (studentId: string, columnId: string, value: string) => {
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) && value !== "") return;
+
+    try {
+      const existingGrade = getCustomGrade(studentId, columnId);
+
+      if (existingGrade) {
+        const { error } = await supabase
+          .from("custom_grades")
+          .update({ score: value === "" ? null : numValue })
+          .eq("column_id", columnId)
+          .eq("student_id", studentId);
+
+        if (error) throw error;
+
+        setCustomGrades(customGrades.map(g =>
+          g.column_id === columnId && g.student_id === studentId
+            ? { ...g, score: value === "" ? null : numValue }
+            : g
+        ));
+      } else {
+        const { data, error } = await supabase
+          .from("custom_grades")
+          .insert({
+            column_id: columnId,
+            student_id: studentId,
+            score: value === "" ? null : numValue,
+            max_score: 20,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setCustomGrades([...customGrades, data]);
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center p-8">Cargando...</div>;
   }
@@ -195,11 +364,11 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
     );
   }
 
-  if (evaluations.length === 0) {
+  if (evaluations.length === 0 && customColumns.length === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
-          <p className="text-muted-foreground">No hay evaluaciones creadas</p>
+          <p className="text-muted-foreground">No hay evaluaciones ni columnas de notas creadas</p>
         </CardContent>
       </Card>
     );
@@ -221,46 +390,92 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
             </CardDescription>
           </div>
           {(userRole === "teacher" || userRole === "administrator") && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Editar Pesos de Evaluaciones
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Configurar Pesos de Evaluaciones</DialogTitle>
-                  <DialogDescription>
-                    Asigna un peso a cada evaluación (0-1). La suma debe ser igual a 1.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  {evaluations.map((evaluation) => (
-                    <div key={evaluation.id} className="flex items-center gap-4">
-                      <Label className="flex-1 text-sm">{evaluation.title}</Label>
+            <div className="flex gap-2">
+              <Dialog open={addColumnDialogOpen} onOpenChange={setAddColumnDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agregar Nota
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Agregar Columna de Nota</DialogTitle>
+                    <DialogDescription>
+                      Crea una nueva columna para registrar otro tipo de calificación.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="column-name">Nombre de la nota</Label>
                       <Input
-                        type="number"
-                        min="0"
-                        max="1"
-                        step="0.01"
-                        value={tempWeights[evaluation.id] || 0}
-                        onChange={(e) => handleWeightChange(evaluation.id, e.target.value)}
-                        className="w-24"
+                        id="column-name"
+                        placeholder="Ej: Participación, Tarea, etc."
+                        value={newColumnName}
+                        onChange={(e) => setNewColumnName(e.target.value)}
                       />
                     </div>
-                  ))}
-                  <div className="pt-2 border-t">
-                    <p className="text-sm text-muted-foreground">
-                      Suma actual: {Object.values(tempWeights).reduce((acc, val) => acc + val, 0).toFixed(2)}
-                    </p>
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button onClick={handleSaveWeights}>Guardar</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                  <DialogFooter>
+                    <Button onClick={handleAddCustomColumn}>Agregar</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Editar Pesos
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Configurar Pesos</DialogTitle>
+                    <DialogDescription>
+                      Asigna un peso a cada evaluación y nota (0-1). La suma debe ser igual a 1.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4 max-h-96 overflow-y-auto">
+                    {evaluations.map((evaluation) => (
+                      <div key={evaluation.id} className="flex items-center gap-4">
+                        <Label className="flex-1 text-sm">{evaluation.title}</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={tempWeights[evaluation.id] || 0}
+                          onChange={(e) => handleWeightChange(evaluation.id, e.target.value)}
+                          className="w-24"
+                        />
+                      </div>
+                    ))}
+                    {customColumns.map((column) => (
+                      <div key={column.id} className="flex items-center gap-4">
+                        <Label className="flex-1 text-sm">{column.name}</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={tempWeights[`custom_${column.id}`] || 0}
+                          onChange={(e) => handleWeightChange(`custom_${column.id}`, e.target.value)}
+                          className="w-24"
+                        />
+                      </div>
+                    ))}
+                    <div className="pt-2 border-t">
+                      <p className="text-sm text-muted-foreground">
+                        Suma actual: {Object.values(tempWeights).reduce((acc, val) => acc + val, 0).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleSaveWeights}>Guardar</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           )}
         </div>
       </CardHeader>
@@ -275,6 +490,23 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
                 {evaluations.map((evaluation) => (
                   <th key={evaluation.id} className="p-3 text-center font-medium min-w-[120px]">
                     {evaluation.title}
+                  </th>
+                ))}
+                {customColumns.map((column) => (
+                  <th key={column.id} className="p-3 text-center font-medium min-w-[140px] bg-accent/10">
+                    <div className="flex items-center justify-center gap-2">
+                      <span>{column.name}</span>
+                      {(userRole === "teacher" || userRole === "administrator") && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => handleDeleteCustomColumn(column.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </th>
                 ))}
                 <th className="p-3 text-center font-medium min-w-[120px] bg-primary/10">
@@ -305,6 +537,32 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
                           ) : (
                             <span className="text-muted-foreground text-sm italic">
                               -
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                    {customColumns.map((column) => {
+                      const customGrade = getCustomGrade(student.id, column.id);
+                      return (
+                        <td key={column.id} className="p-3 text-center bg-accent/5">
+                          {(userRole === "teacher" || userRole === "administrator") ? (
+                            <Input
+                              type="number"
+                              min="0"
+                              max="20"
+                              step="0.1"
+                              value={customGrade?.score ?? ""}
+                              onChange={(e) => handleCustomGradeChange(student.id, column.id, e.target.value)}
+                              className="w-20 mx-auto text-center"
+                              placeholder="-"
+                            />
+                          ) : (
+                            <span className="font-semibold">
+                              {customGrade?.score !== null && customGrade?.score !== undefined
+                                ? `${customGrade.score.toFixed(1)} / ${customGrade.max_score}`
+                                : "-"
+                              }
                             </span>
                           )}
                         </td>
