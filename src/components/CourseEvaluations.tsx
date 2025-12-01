@@ -561,8 +561,38 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("No autenticado");
 
+      // Subir archivos primero
+      const uploadedAnswers: Record<string, any> = {};
+      for (const questionId in studentAnswers) {
+        const answer = studentAnswers[questionId];
+        const question = evaluationQuestions.find(q => q.id === questionId);
+        
+        if (question?.question_type === "file_upload" && answer instanceof File) {
+          const fileName = `${user.user.id}/${Date.now()}_${answer.name}`;
+          const filePath = `${courseId}/evaluations/${takingEvaluation.id}/${fileName}`;
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("course-files")
+            .upload(filePath, answer, {
+              cacheControl: "3600",
+              upsert: false,
+            });
+
+          if (uploadError) throw uploadError;
+
+          // Obtener URL pública
+          const { data: { publicUrl } } = supabase.storage
+            .from("course-files")
+            .getPublicUrl(filePath);
+
+          uploadedAnswers[questionId] = publicUrl;
+        } else {
+          uploadedAnswers[questionId] = answer;
+        }
+      }
+
       // Calcular puntuación
-      const { score, totalPoints } = calculateScore(evaluationQuestions, studentAnswers);
+      const { score, totalPoints } = calculateScore(evaluationQuestions, uploadedAnswers);
 
       // Crear submission
       const { data: submissionData, error: submissionError } = await supabase
@@ -580,7 +610,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
 
       // Insertar respuestas con calificación
       const answersToInsert = evaluationQuestions.map((q) => {
-        const studentAnswer = studentAnswers[q.id!] || null;
+        const studentAnswer = uploadedAnswers[q.id!] || null;
         const correctAnswer = q.correct_answer;
         
         // Si necesita revisión manual, no calificar
@@ -1087,15 +1117,22 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                   )}
 
                   {question.question_type === "file_upload" && (
-                    <Input
-                      type="file"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setStudentAnswers({ ...studentAnswers, [question.id!]: file.name });
-                        }
-                      }}
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        type="file"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setStudentAnswers({ ...studentAnswers, [question.id!]: file });
+                          }
+                        }}
+                      />
+                      {studentAnswers[question.id!] instanceof File && (
+                        <p className="text-sm text-muted-foreground">
+                          Archivo seleccionado: {(studentAnswers[question.id!] as File).name}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {question.question_type === "matching" && (
