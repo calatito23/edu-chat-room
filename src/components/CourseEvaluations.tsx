@@ -143,12 +143,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       return;
     }
 
-    console.log("➕ Agregando pregunta con imágenes:", currentQuestion);
-    
-    const newQuestion = { ...currentQuestion, order_number: questions.length + 1 };
-    console.log("📋 Pregunta preparada:", newQuestion);
-    
-    setQuestions([...questions, newQuestion]);
+    setQuestions([...questions, { ...currentQuestion, order_number: questions.length + 1 }]);
     setCurrentQuestion({
       question_text: "",
       question_type: "short_answer",
@@ -359,35 +354,13 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
         options: q.options ? q.options : null,
         correct_answer: q.correct_answer,
         points: q.points,
-        images: q.images && q.images.length > 0 ? q.images : null,
       }));
-
-      console.log("📝 Preguntas a insertar:", questionsToInsert.map(q => ({ 
-        question_text: q.question_text, 
-        has_images: !!q.images,
-        images_count: q.images?.length || 0 
-      })));
 
       const { error: questionsError } = await supabase
         .from("evaluation_questions")
         .insert(questionsToInsert);
 
       if (questionsError) throw questionsError;
-
-      // Refuerzo: actualizar explícitamente las imágenes por si el INSERT las ignoró
-      await Promise.all(
-        (questionsToUse || questions).map(async (q) => {
-          if (!q.images || q.images.length === 0) return;
-          const { error } = await supabase
-            .from("evaluation_questions")
-            .update({ images: q.images })
-            .eq("evaluation_id", evalData.id)
-            .eq("order_number", q.order_number);
-          if (error) {
-            console.error("Error actualizando imágenes de pregunta", q.question_text, error);
-          }
-        })
-      );
 
       toast({
         title: "Éxito",
@@ -478,7 +451,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
         options: Array.isArray(q.options) ? q.options as string[] : [],
         correct_answer: q.correct_answer,
         points: q.points || 1,
-        images: Array.isArray((q as any).images) ? (q as any).images as string[] : [],
+        images: [],
       })) || [];
       
       setQuestions(loadedQuestions);
@@ -594,17 +567,10 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
 
       if (questionsError) throw questionsError;
 
-      console.log("📖 Preguntas cargadas desde BD:", questionsData);
-
-      const processedQuestions = questionsData?.map(q => ({
+      setEvaluationQuestions(questionsData?.map(q => ({
         ...q,
         options: Array.isArray(q.options) ? q.options as string[] : [],
-        images: Array.isArray((q as any).images) ? (q as any).images as string[] : [],
-      })) || [];
-
-      console.log("🖼️ Preguntas procesadas con imágenes:", processedQuestions);
-
-      setEvaluationQuestions(processedQuestions);
+      })) || []);
       setTakingEvaluation(evaluation);
       setStudentAnswers({});
     } catch (error: any) {
@@ -1149,13 +1115,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                     {index + 1}. {question.question_text}
                   </CardTitle>
                   <CardDescription>{question.points} puntos</CardDescription>
-                  {question.images && question.images.length > 0 && (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      {question.images.map((img, idx) => (
-                        <img key={idx} src={img} alt={`Imagen ${idx + 1}`} className="w-full h-32 object-cover rounded border" />
-                      ))}
-                    </div>
-                  )}
                 </CardHeader>
                 <CardContent>
                   {question.question_type === "short_answer" && (
