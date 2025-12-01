@@ -264,6 +264,7 @@ export type Database = {
           created_at: string | null
           evaluation_id: string
           id: string
+          images: Json | null
           options: Json | null
           order_number: number
           points: number | null
@@ -275,6 +276,7 @@ export type Database = {
           created_at?: string | null
           evaluation_id: string
           id?: string
+          images?: Json | null
           options?: Json | null
           order_number: number
           points?: number | null
@@ -286,6 +288,7 @@ export type Database = {
           created_at?: string | null
           evaluation_id?: string
           id?: string
+          images?: Json | null
           options?: Json | null
           order_number?: number
           points?: number | null

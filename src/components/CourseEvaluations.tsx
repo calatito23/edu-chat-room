@@ -452,7 +452,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
         options: Array.isArray(q.options) ? q.options as string[] : [],
         correct_answer: q.correct_answer,
         points: q.points || 1,
-        images: Array.isArray(q.images) ? q.images as string[] : [],
+        images: Array.isArray((q as any).images) ? (q as any).images as string[] : [],
       })) || [];
       
       setQuestions(loadedQuestions);
@@ -571,6 +571,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       setEvaluationQuestions(questionsData?.map(q => ({
         ...q,
         options: Array.isArray(q.options) ? q.options as string[] : [],
+        images: Array.isArray((q as any).images) ? (q as any).images as string[] : [],
       })) || []);
       setTakingEvaluation(evaluation);
       setStudentAnswers({});
