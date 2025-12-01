@@ -153,7 +153,8 @@ export default function EvaluationStats() {
       // Actualizar cada respuesta con los puntos editados
       for (const answer of viewingAnswers.answers) {
         const points = editedPoints[answer.id] !== undefined ? editedPoints[answer.id] : (answer.points_earned || 0);
-        const maxPoints = answer.evaluation_questions.points || 0;
+        // Si la pregunta no tiene puntos máximos definidos, usamos los puntos asignados manualmente
+        const maxPoints = answer.evaluation_questions.points ?? points;
         
         totalEarned += points;
         totalPossible += maxPoints;
@@ -427,14 +428,14 @@ export default function EvaluationStats() {
                             <Input
                               type="number"
                               min="0"
-                              max={question.points}
+                              max={question.points ?? undefined}
                               step="0.1"
-                              value={editedPoints[answer.id] || 0}
+                              value={editedPoints[answer.id] ?? answer.points_earned ?? 0}
                               onChange={(e) => {
-                                const value = Math.min(
-                                  Math.max(0, parseFloat(e.target.value) || 0),
-                                  question.points
-                                );
+                                const raw = parseFloat(e.target.value);
+                                const safeValue = isNaN(raw) ? 0 : Math.max(0, raw);
+                                const maxAllowed = question.points ?? Infinity;
+                                const value = Math.min(safeValue, maxAllowed);
                                 setEditedPoints(prev => ({
                                   ...prev,
                                   [answer.id]: value
