@@ -354,6 +354,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
         options: q.options ? q.options : null,
         correct_answer: q.correct_answer,
         points: q.points,
+        images: q.images || null,
       }));
 
       const { error: questionsError } = await supabase
@@ -451,7 +452,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
         options: Array.isArray(q.options) ? q.options as string[] : [],
         correct_answer: q.correct_answer,
         points: q.points || 1,
-        images: [],
+        images: Array.isArray(q.images) ? q.images as string[] : [],
       })) || [];
       
       setQuestions(loadedQuestions);
@@ -1115,6 +1116,13 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                     {index + 1}. {question.question_text}
                   </CardTitle>
                   <CardDescription>{question.points} puntos</CardDescription>
+                  {question.images && question.images.length > 0 && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {question.images.map((img, idx) => (
+                        <img key={idx} src={img} alt={`Imagen ${idx + 1}`} className="w-full h-32 object-cover rounded border" />
+                      ))}
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {question.question_type === "short_answer" && (
