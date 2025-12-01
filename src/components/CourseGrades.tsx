@@ -309,36 +309,29 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
     if (isNaN(numValue) && value !== "") return;
 
     try {
+      const { data, error } = await supabase
+        .from("custom_grades")
+        .upsert({
+          column_id: columnId,
+          student_id: studentId,
+          score: value === "" ? null : numValue,
+          max_score: 20,
+        }, {
+          onConflict: 'column_id,student_id'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
       const existingGrade = getCustomGrade(studentId, columnId);
-
       if (existingGrade) {
-        const { error } = await supabase
-          .from("custom_grades")
-          .update({ score: value === "" ? null : numValue })
-          .eq("column_id", columnId)
-          .eq("student_id", studentId);
-
-        if (error) throw error;
-
         setCustomGrades(customGrades.map(g =>
           g.column_id === columnId && g.student_id === studentId
-            ? { ...g, score: value === "" ? null : numValue }
+            ? data
             : g
         ));
       } else {
-        const { data, error } = await supabase
-          .from("custom_grades")
-          .insert({
-            column_id: columnId,
-            student_id: studentId,
-            score: value === "" ? null : numValue,
-            max_score: 20,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
         setCustomGrades([...customGrades, data]);
       }
     } catch (error: any) {
