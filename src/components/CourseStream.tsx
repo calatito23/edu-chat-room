@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { MessageSquare, Send, User, Trash2 } from "lucide-react";
 
@@ -85,13 +86,21 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
           .select("*")
           .in("id", allAuthorIds);
 
+        // Cargar los roles de todos los usuarios
+        const { data: rolesData } = await supabase
+          .from("user_roles")
+          .select("*")
+          .in("user_id", allAuthorIds);
+
         // Mapear los datos
         const postsWithData = postsData.map(post => ({
           ...post,
           profiles: profilesData?.find(p => p.id === post.author_id),
+          role: rolesData?.find(r => r.user_id === post.author_id)?.role,
           comments: commentsData?.filter(c => c.post_id === post.id).map(comment => ({
             ...comment,
-            profiles: profilesData?.find(p => p.id === comment.author_id)
+            profiles: profilesData?.find(p => p.id === comment.author_id),
+            role: rolesData?.find(r => r.user_id === comment.author_id)?.role
           })) || []
         }));
 
@@ -304,7 +313,14 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
                   <User className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">{post.profiles?.full_name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">{post.profiles?.full_name}</p>
+                    {post.role && (
+                      <Badge variant={post.role === "teacher" ? "default" : post.role === "administrator" ? "destructive" : "secondary"} className="text-xs">
+                        {post.role === "teacher" ? "Profesor" : post.role === "administrator" ? "Administrador" : "Estudiante"}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {new Date(post.created_at).toLocaleDateString()}
                   </p>
@@ -337,9 +353,16 @@ const CourseStream = ({ courseId, userRole }: CourseStreamProps) => {
                     <div className="flex-1 bg-muted rounded-lg p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
-                          <p className="text-sm font-medium">
-                            {comment.profiles?.full_name || "Usuario"}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">
+                              {comment.profiles?.full_name || "Usuario"}
+                            </p>
+                            {comment.role && (
+                              <Badge variant={comment.role === "teacher" ? "default" : comment.role === "administrator" ? "destructive" : "secondary"} className="text-xs">
+                                {comment.role === "teacher" ? "Profesor" : comment.role === "administrator" ? "Administrador" : "Estudiante"}
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-sm mt-1">{comment.content}</p>
                           <span className="text-xs text-muted-foreground">
                             {new Date(comment.created_at).toLocaleDateString()}
