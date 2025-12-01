@@ -137,6 +137,7 @@ export const Notifications = () => {
       grade: "⭐",
       file: "📎",
       post: "📢",
+      zoom_meeting: "🎥",
     };
     return icons[type as keyof typeof icons] || "🔔";
   };
