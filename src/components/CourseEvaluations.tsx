@@ -191,35 +191,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    
-    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-    
-    Promise.all(
-      imageFiles.map(file => {
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(file);
-        });
-      })
-    ).then(newImages => {
-      setCurrentQuestion({
-        ...currentQuestion,
-        images: [...(currentQuestion.images || []), ...newImages]
-      });
-      
-      toast({
-        title: "Imagen(es) agregada(s)",
-        description: `Se ${imageFiles.length === 1 ? 'agregó 1 imagen' : `agregaron ${imageFiles.length} imágenes`}`,
-      });
-    });
-    
-    // Reset input
-    e.target.value = '';
-  };
 
   const removeImage = (index: number) => {
     setCurrentQuestion({
@@ -570,6 +541,7 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       setEvaluationQuestions(questionsData?.map(q => ({
         ...q,
         options: Array.isArray(q.options) ? q.options as string[] : [],
+        images: Array.isArray(q.images) ? q.images as string[] : [],
       })) || []);
       setTakingEvaluation(evaluation);
       setStudentAnswers({});
@@ -832,26 +804,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                         placeholder="Escribe tu pregunta aquí (puedes pegar imágenes)"
                         className="min-h-[140px]"
                       />
-                      <div className="mt-2 flex gap-2">
-                        <input
-                          type="file"
-                          id="image-upload"
-                          accept="image/*"
-                          multiple
-                          onChange={handleFileUpload}
-                          className="hidden"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => document.getElementById('image-upload')?.click()}
-                          className="gap-2"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Subir Imagen
-                        </Button>
-                      </div>
                       {currentQuestion.images && currentQuestion.images.length > 0 && (
                         <div className="mt-3 grid grid-cols-2 gap-2">
                           {currentQuestion.images.map((img, idx) => (
