@@ -374,6 +374,21 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
 
       if (questionsError) throw questionsError;
 
+      // Refuerzo: actualizar explícitamente las imágenes por si el INSERT las ignoró
+      await Promise.all(
+        (questionsToUse || questions).map(async (q) => {
+          if (!q.images || q.images.length === 0) return;
+          const { error } = await supabase
+            .from("evaluation_questions")
+            .update({ images: q.images })
+            .eq("evaluation_id", evalData.id)
+            .eq("order_number", q.order_number);
+          if (error) {
+            console.error("Error actualizando imágenes de pregunta", q.question_text, error);
+          }
+        })
+      );
+
       toast({
         title: "Éxito",
         description: "Evaluación creada correctamente",
