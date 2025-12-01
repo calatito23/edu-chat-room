@@ -31,8 +31,8 @@ interface Question {
   options?: string[];
   correct_answer: any;
   points: number;
-  images?: string[];
 }
+
 
 interface CourseEvaluationsProps {
   courseId: string;
@@ -63,7 +63,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
     options: [],
     correct_answer: "",
     points: 1,
-    images: [],
   });
   const [optionInputs, setOptionInputs] = useState<string[]>(["", "", "", ""]);
   const [showPointsAlert, setShowPointsAlert] = useState(false);
@@ -151,52 +150,8 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       options: [],
       correct_answer: "",
       points: 1,
-      images: [],
     });
     setOptionInputs(["", "", "", ""]);
-  };
-
-  const handlePasteImage = async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData.items;
-    const imageItems: File[] = [];
-    
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        if (file) imageItems.push(file);
-      }
-    }
-    
-    if (imageItems.length > 0) {
-      e.preventDefault();
-      const newImages = await Promise.all(
-        imageItems.map(file => {
-          return new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target?.result as string);
-            reader.readAsDataURL(file);
-          });
-        })
-      );
-      
-      setCurrentQuestion({
-        ...currentQuestion,
-        images: [...(currentQuestion.images || []), ...newImages]
-      });
-      
-      toast({
-        title: "Imagen(es) agregada(s)",
-        description: `Se ${imageItems.length === 1 ? 'agregó 1 imagen' : `agregaron ${imageItems.length} imágenes`}`,
-      });
-    }
-  };
-
-
-  const removeImage = (index: number) => {
-    setCurrentQuestion({
-      ...currentQuestion,
-      images: currentQuestion.images?.filter((_, i) => i !== index) || []
-    });
   };
 
   const removeQuestion = (index: number) => {
@@ -422,7 +377,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
         options: Array.isArray(q.options) ? q.options as string[] : [],
         correct_answer: q.correct_answer,
         points: q.points || 1,
-        images: [],
       })) || [];
       
       setQuestions(loadedQuestions);
@@ -541,7 +495,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
       setEvaluationQuestions(questionsData?.map(q => ({
         ...q,
         options: Array.isArray(q.options) ? q.options as string[] : [],
-        images: Array.isArray(q.images) ? q.images as string[] : [],
       })) || []);
       setTakingEvaluation(evaluation);
       setStudentAnswers({});
@@ -772,9 +725,6 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                         <div className="flex-1">
                           <p className="font-medium">{q.question_text}</p>
                           <p className="text-sm text-muted-foreground">Tipo: {q.question_type} - Puntos: {q.points}</p>
-                          {q.images && q.images.length > 0 && (
-                            <p className="text-xs text-primary mt-1">📎 {q.images.length} imagen{q.images.length !== 1 ? 'es' : ''} adjunta{q.images.length !== 1 ? 's' : ''}</p>
-                          )}
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => removeQuestion(index)}>
                           <Trash2 className="h-4 w-4" />
@@ -795,33 +745,13 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
                     <div className="space-y-3">
                       <Label className="flex items-center justify-between mb-2">
                         <span>Pregunta</span>
-                        <span className="text-xs text-muted-foreground">Puedes pegar imágenes con Ctrl+V</span>
                       </Label>
                       <Textarea
                         value={currentQuestion.question_text}
                         onChange={(e) => setCurrentQuestion({ ...currentQuestion, question_text: e.target.value })}
-                        onPaste={handlePasteImage}
-                        placeholder="Escribe tu pregunta aquí (puedes pegar imágenes)"
+                        placeholder="Escribe tu pregunta aquí"
                         className="min-h-[140px]"
                       />
-                      {currentQuestion.images && currentQuestion.images.length > 0 && (
-                        <div className="mt-3 grid grid-cols-2 gap-2">
-                          {currentQuestion.images.map((img, idx) => (
-                            <div key={idx} className="relative group">
-                              <img src={img} alt={`Imagen ${idx + 1}`} className="w-full h-32 object-cover rounded border" />
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => removeImage(idx)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
