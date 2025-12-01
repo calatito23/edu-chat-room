@@ -357,6 +357,8 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
         images: q.images || null,
       }));
 
+      console.log("📝 Guardando preguntas con imágenes:", questionsToInsert);
+
       const { error: questionsError } = await supabase
         .from("evaluation_questions")
         .insert(questionsToInsert);
@@ -568,11 +570,17 @@ export default function CourseEvaluations({ courseId, userRole }: CourseEvaluati
 
       if (questionsError) throw questionsError;
 
-      setEvaluationQuestions(questionsData?.map(q => ({
+      console.log("📖 Preguntas cargadas desde BD:", questionsData);
+
+      const processedQuestions = questionsData?.map(q => ({
         ...q,
         options: Array.isArray(q.options) ? q.options as string[] : [],
         images: Array.isArray((q as any).images) ? (q as any).images as string[] : [],
-      })) || []);
+      })) || [];
+
+      console.log("🖼️ Preguntas procesadas con imágenes:", processedQuestions);
+
+      setEvaluationQuestions(processedQuestions);
       setTakingEvaluation(evaluation);
       setStudentAnswers({});
     } catch (error: any) {
