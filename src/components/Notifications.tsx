@@ -136,6 +136,7 @@ export const Notifications = () => {
       evaluation: "📝",
       grade: "⭐",
       file: "📎",
+      post: "📢",
     };
     return icons[type as keyof typeof icons] || "🔔";
   };
