@@ -511,7 +511,7 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
                         <td key={evaluation.id} className="p-3 text-center">
                           {grade && grade.score !== null && grade.total_points !== null ? (
                             <span className="font-semibold">
-                              {grade.score.toFixed(1)} / {grade.total_points}
+                              {grade.score.toFixed(2)} / {grade.total_points}
                             </span>
                           ) : grade ? (
                             <span className="text-muted-foreground text-sm">
@@ -543,7 +543,7 @@ export default function CourseGrades({ courseId, userRole }: CourseGradesProps) 
                           ) : (
                             <span className="font-semibold">
                               {customGrade?.score !== null && customGrade?.score !== undefined
-                                ? `${customGrade.score.toFixed(1)} / ${customGrade.max_score}`
+                                ? `${customGrade.score.toFixed(2)} / ${customGrade.max_score}`
                                 : "-"
                               }
                             </span>
