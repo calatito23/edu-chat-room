@@ -1,1 +1,16 @@
 project_id = "ombbxeommcwdkebrsowx"
+
+[functions.zoom-auth]
+verify_jwt = false
+
+[functions.zoom-create-meeting]
+verify_jwt = false
+
+[functions.zoom-get-recordings]
+verify_jwt = false
+
+[functions.zoom-sync-recordings]
+verify_jwt = false
+
+[functions.send-notification-email]
+verify_jwt = false
